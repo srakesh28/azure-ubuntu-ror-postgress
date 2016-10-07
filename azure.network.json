@@ -12,11 +12,8 @@
     },
     "environmentPostfix": {
       "type": "string",
-<<<<<<< HEAD
 	  "defaultValue": "dev"
-=======
-      "defaultValue": "dev"
->>>>>>> origin/master
+
     },
     "nsgdiagstorageType": {
       "type": "string",
