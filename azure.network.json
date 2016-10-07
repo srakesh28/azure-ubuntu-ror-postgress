@@ -7,10 +7,12 @@
       "defaultValue": "Central US"
     },
     "baseaddress": {
-      "type": "string"
+      "type": "string",
+	  "defaultValue": "10.0.0.0/16"
     },
     "environmentPostfix": {
-      "type": "string"
+      "type": "string".
+	  "defaultValue": "dev"
     },
     "nsgdiagstorageType": {
       "type": "string",
@@ -42,7 +44,7 @@
     "gatewaysubnetFirst3": "[concat(variables('vnetfirst2'), add(int(variables('ipValues')[2]),5))]",
 
     "vnetSettings": {
-      "vnetName": "[concat('dncvnet', parameters('environmentPostfix'))]",
+      "vnetName": "[concat('hmrorvnet', parameters('environmentPostfix'))]",
       "addressPrefix": "[parameters('baseaddress')]",
       "dbSubnet": {
         "name": "subnetdb",
@@ -79,7 +81,6 @@
   },
   "resources": [
     {
-      "comments": "Generalized from resource: '/subscriptions/1eb17067-73a5-403a-8aa8-cc7cc0b6fed3/resourceGroups/dncc-wp-mysqlcluster/providers/Microsoft.Network/virtualNetworks/dncc-wp-mysqlcluster'.",
       "type": "Microsoft.Network/virtualNetworks",
       "name": "[variables('vnetsettings').vnetName]",
       "apiVersion": "[variables('networkApiVersion')]",
@@ -163,7 +164,7 @@
               "description": "Allow author web Subnet",
               "protocol": "Tcp",
               "sourcePortRange": "*",
-              "destinationPortRange": "5306",
+              "destinationPortRange": "5432",
               "sourceAddressPrefix": "[variables('vnetSettings').authorwebSubnet.prefix]",
               "destinationAddressPrefix": "*",
               "access": "Allow",
@@ -177,7 +178,7 @@
               "description": "Allow render web Subnet",
               "protocol": "Tcp",
               "sourcePortRange": "*",
-              "destinationPortRange": "5306",
+              "destinationPortRange": "5432",
               "sourceAddressPrefix": "[variables('vnetSettings').renderwebSubnet.prefix]",
               "destinationAddressPrefix": "*",
               "access": "Allow",
@@ -191,7 +192,7 @@
               "description": "Allow render web Subnet",
               "protocol": "Tcp",
               "sourcePortRange": "*",
-              "destinationPortRange": "5306",
+              "destinationPortRange": "5432",
               "sourceAddressPrefix": "[variables('vnetSettings').jumpboxSubnet.prefix]",
               "destinationAddressPrefix": "*",
               "access": "Allow",
