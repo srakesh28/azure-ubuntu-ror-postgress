@@ -8,11 +8,11 @@
     },
     "baseaddress": {
       "type": "string",
-	  "defaultValue": "10.0.0.0/16"
+      "defaultValue": "10.0.0.0/16"
     },
     "environmentPostfix": {
       "type": "string",
-	  "defaultValue": "dev"
+      "defaultValue": "dev"
     },
     "nsgdiagstorageType": {
       "type": "string",
