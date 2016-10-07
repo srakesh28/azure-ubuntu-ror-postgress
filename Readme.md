@@ -8,7 +8,7 @@ web setup scripts configure SSL, HyperDb plugin to access the mariadb cluster an
 Scripts need to be uploaded to an Azure storage account or another publicly accessible site.
 
 # Deploy Network Subnets etc
-<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsrakesh28%2Fazure-ubuntu-ror-postgress%2Fmaster%2Fazure-network.json" target="_blank">
+<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsrakesh28%2Fazure-ubuntu-ror-postgress%2Fmaster%2Fazure.network.json" target="_blank">
     <img src="http://azuredeploy.net/deploybutton.png"/>
 
 </a>
