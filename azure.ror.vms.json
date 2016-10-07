@@ -1,0 +1,502 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "Central US"
+    },
+    "environmentPostfix": {
+      "type": "string"
+    },
+    "numberOfWebVM": {
+      "type": "int",
+      "defaultValue": 2
+    },
+    "webVMAdmin": {
+      "type": "string"
+    },
+    "shareUrl": {
+      "type": "string"
+    },
+    "shareUser": {
+      "type": "string"
+    },
+    "sharePass": {
+      "type": "securestring"
+    },
+    "websshKeyData": {
+      "type": "string",
+      "metadata": {
+        "description": "SSH rsa public key file as a string."
+      }
+    },
+    "scriptWebUri": {
+      "type": "string"
+    },
+    "scriptWebCommand": {
+      "type": "string"
+    },
+    "scriptStorageResourceGroup": {
+      "type": "string",
+      "defaultValue": "dnccommon"
+    },
+    "scriptStorageAccount": {
+      "type": "string",
+      "defaultValue": "dnccommonfilestorage"
+    },
+    "dnccDb": {
+      "type": "string",
+      "metadata": {
+        "description": "WP Database Name."
+      }
+    },
+    "dnccUser": {
+      "type": "string",
+      "metadata": {
+        "description": "WP MySQL user name."
+      }
+    },
+    "dnccUserPass": {
+      "type": "securestring",
+      "metadata": {
+        "description": "WP MySQL user password."
+      }
+    },
+    "renderUrl": {
+      "type": "string",
+      "metadata": {
+        "description": "URL for the render servers including http/https."
+      }
+    },
+    "omsworkspaceId": {
+      "type": "string",
+      "defaultValue": "e2c96321-d169-44c1-a5e0-2ab0b56deefa",
+      "metadata": {
+        "description": "workspace id"
+      }
+    },
+    "omsworkspaceKey": {
+      "type": "securestring",
+      "metadata": {
+        "description": "workspace key"
+      }
+    },
+    "keydata": {
+      "type": "string",
+      "metadata": { "description": "base64 encoded private key used to connect to VSTS git repo" }
+    },
+    "gitrepo": {
+      "type": "string",
+      "metadata": {
+        "description": "Git Repository for dncc source code."
+      }
+    },
+    "vaultName": {
+      "type": "string"
+    },
+    "vaultResourceGroup": {
+      "type": "string"
+    },
+    "httpssecretUrlWithVersion": {
+      "type": "string"
+    },
+    "httpscasecretUrlWithVersion": {
+      "type": "string"
+    },
+    "gitbranch": {
+      "type": "string"
+    },
+    "vnetname": {
+      "type": "string"
+    },
+    "subnetname": {
+      "type": "string"
+    },
+    "dbip": {
+      "type": "string"
+    },
+
+    "localslaves": {
+      "type": "array"
+
+    },
+    "remoteslaves": {
+      "type": "array"
+    }
+  },
+  "variables": {
+    "namingfix": "[toLower(substring(uniqueString(concat(resourceGroup().id, parameters('environmentPostfix'))), 0, 5))]",
+    "vmApiVersion": "2016-03-30",
+    "networkApiVersion": "2016-03-30",
+    "storageApiVersion": "2015-06-15",
+    "insightsApiVersion": "2015-04-01",
+
+    "dbport": "5306",
+
+    "websubnetRef": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/virtualNetworks/', parameters('vnetname'),'/subnets/', parameters('subnetname'))]",
+    "webOSDiskName": "webOSDisk",
+    "webVmSize": "Standard_F2S",
+    "as_web": "[concat(variables('webprefix'), 'as', parameters('environmentPostfix'))]",
+    "storageAccountType": "Premium_LRS",
+
+    "webprefix": "authorweb",
+    "webvmname": "[concat(variables('webprefix'), 'vm', parameters('environmentPostfix'))]",
+
+    "webStorageAccount": "[concat(substring(uniqueString(resourceGroup().id, variables('webprefix')),5), variables('webprefix'), 'sa')]",
+    "webdiagnosticsStorageAccount": "[concat(substring(uniqueString(resourceGroup().id, variables('webprefix')),5), variables('webprefix'),'diagsa')]",
+    "websshKeyPath": "[concat('/home/',parameters('webVMAdmin'),'/.ssh/authorized_keys')]",
+    "scriptStorageAccountId": "[resourceId( parameters('scriptStorageResourceGroup'), 'Microsoft.Storage/storageAccounts', parameters('scriptStorageAccount'))]",
+    "lbname": "[concat(variables('webprefix'), 'lb', parameters('environmentPostfix'))]",
+    "bePoolName": "lbbepool",
+    "lbID": "[resourceId('Microsoft.Network/loadBalancers',variables('lbname'))]",
+    "frontEndIPConfigID": "[concat(variables('lbID'),'/frontendIPConfigurations/loadBalancerFrontEnd')]",
+    "lbPoolID": "[concat(variables('lbID'),'/backendAddressPools/', variables('bePoolName'))]",
+    "lbProbeID": "[concat(variables('lbID'),'/probes/tcpProbe')]",
+
+    "imageReferences": {
+
+      "authorweb": {
+        "publisher": "Canonical",
+        "offer": "UbuntuServer",
+        "sku": "14.04.2-LTS",
+        "version": "latest"
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[concat(variables('webstorageaccount'), copyIndex())]",
+      "apiVersion": "[variables('storageApiVersion')]",
+      "location": "[parameters('location')]",
+      "tags": {
+        "displayName": "webstorageaccounts"
+      },
+      "copy": {
+        "name": "webStorageLoop",
+        "count": "[parameters('numberOfWebVM')]"
+      },
+      "properties": {
+        "accountType": "[variables('storageAccountType')]"
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[variables('webdiagnosticsStorageAccount')]",
+      "apiVersion": "[variables('storageApiVersion')]",
+      "location": "[parameters('location')]",
+      "tags": {
+        "displayName": "webdiagnosticstorage"
+      },
+      "properties": {
+        "accountType": "Standard_LRS"
+      }
+    },
+    {
+      "comments": "Generalized from resource: '/subscriptions/1eb17067-73a5-403a-8aa8-cc7cc0b6fed3/resourceGroups/dncc-wp-mysqlcluster/providers/Microsoft.Compute/availabilitySets/mySQL-AS'.",
+      "type": "Microsoft.Compute/availabilitySets",
+      "name": "[variables('as_web')]",
+      "apiVersion": "[variables('vmApiVersion')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "platformUpdateDomainCount": 3,
+        "platformFaultDomainCount": 3
+      },
+      "tags": {
+        "displayName": "availabilityset_web"
+      },
+      "dependsOn": [ ]
+    },
+
+    {
+      "apiVersion": "[variables('vmApiVersion')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[concat(variables('webvmname'),'nic', copyindex())]",
+      "location": "[parameters('location')]",
+      "copy": {
+        "name": "webnicLoop",
+        "count": "[parameters('numberOfWebVM')]"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Network/loadBalancers/', variables('lbname'))]"
+      ],
+      "tags": {
+        "displayName": "WebNICs"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfigdb",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[variables('websubnetRef')]"
+              },
+              "loadBalancerBackendAddressPools": [
+                {
+                  "id": "[concat(resourceId('Microsoft.Network/loadBalancers',variables('lbname')),'/backendAddressPools/', variables('bePoolName'))]"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "[variables('vmApiVersion')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[concat(variables('webvmname'), copyIndex())]",
+      "location": "[parameters('location')]",
+      "copy": {
+        "name": "webvmLoop",
+        "count": "[parameters('numberOfWebVM')]"
+      },
+      "tags": {
+        "displayName": "webvms"
+      },
+      "dependsOn": [
+        "webStorageLoop",
+        "[resourceId('Microsoft.Compute/availabilitySets', variables('as_web'))]",
+        "[concat('Microsoft.Network/networkInterfaces/', variables('webvmname'),'nic', copyindex())]"
+      ],
+      "properties": {
+        "availabilitySet": {
+          "id": "[resourceId('Microsoft.Compute/availabilitySets', variables('as_web'))]"
+        },
+        "hardwareProfile": {
+          "vmSize": "[variables('webVmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[concat(variables('webvmname'), copyIndex())]",
+          "adminUsername": "[parameters('webVMAdmin')]",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": true,
+            "ssh": {
+              "publicKeys": [
+                {
+                  "path": "[variables('websshKeyPath')]",
+                  "keyData": "[parameters('websshKeyData')]"
+                }
+              ]
+            }
+          },
+          "secrets": [
+            {
+              "sourceVault": {
+                "id": "[resourceId(parameters('vaultResourceGroup'), 'Microsoft.KeyVault/vaults', parameters('vaultName'))]"
+              },
+              "vaultCertificates": [
+                {
+                  "certificateUrl": "[parameters('httpssecretUrlWithVersion')]"
+                },
+                {
+                  "certificateUrl": "[parameters('httpscasecretUrlWithVersion')]"
+                }
+              ]
+            }
+          ]
+        },
+        "storageProfile": {
+          "imageReference": "[variables('imagereferences').authorweb]",
+          "osDisk": {
+            "name": "webosdisk",
+            "vhd": {
+              "uri": "[concat('http://',variables('webStorageAccount'),copyIndex(),'.blob.core.windows.net/vhds/','webosdisk', copyIndex(), '.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('webvmname'),'nic', copyindex()))]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(variables('webvmname'), copyIndex(), '/diagext')]",
+      "apiVersion": "[variables('vmApiVersion')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "webvmloop"
+      ],
+      "copy": {
+        "name": "webvmdiagextensionLoop",
+        "count": "[parameters('numberOfWebVM')]"
+      },
+      "tags": {
+        "displayName": "webvmsdiagext"
+      },
+      "properties": {
+        "publisher": "Microsoft.OSTCExtensions",
+        "type": "LinuxDiagnostic",
+        "typeHandlerVersion": "2.3",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "perfCfg": [
+            {
+              "query": "SELECT UsedMemory,AvailableMemory FROM SCX_MemoryStatisticalInformation",
+              "table": "Memory"
+            },
+            {
+              "query": "SELECT PercentProcessorTime FROM SCX_ProcessorStatisticalInformation",
+              "table": "_Total"
+            }
+          ]
+        },
+        "protectedSettings": {
+          "storageAccountName": "[variables('webdiagnosticsStorageAccount')]",
+          "storageAccountKey": "[listkeys(variables('webdiagnosticsStorageAccount'), variables('storageApiVersion')).key1]",
+          "storageAccountEndPoint": "https://core.windows.net"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(variables('webvmname'), copyIndex(), '/scriptext')]",
+      "apiVersion": "[variables('vmApiVersion')]",
+      "location": "[parameters('location')]",
+
+      "dependsOn": [
+        "webvmloop"
+      ],
+      "copy": {
+        "name": "webscriptextensionLoop",
+        "count": "[parameters('numberOfWebVM')]"
+      },
+      "tags": {
+        "displayName": "webvmsscriptext"
+      },
+      "properties": {
+        "publisher": "Microsoft.OSTCExtensions",
+        "type": "CustomScriptForLinux",
+        "typeHandlerVersion": "1.4",
+        "autoUpgradeMinorVersion": false,
+        "forceUpdateTag" :  "v.1.3",
+        "settings": {
+          "fileUris": [
+            "[concat(parameters('scriptWebUri'), '/', parameters('scriptWebCommand'))]",
+            "[concat(parameters('scriptWebUri'), '/', 'setup_hyperdb.sh')]",
+            "[concat(parameters('scriptWebUri'), '/', 'setup_sshkey.sh')]"
+          ],
+          "commandToExecute": "[concat('bash ', parameters('scriptWebCommand'), ' ', parameters('dbip'), ' ', parameters('dnccDb'), ' ', parameters('dnccUser'), ' ', parameters('dnccUserPass'), ' 0 ', parameters('renderUrl'), ' ', parameters('shareUrl'), ' ', parameters('shareUser'), ' ', parameters('sharePass'), ' ', base64(parameters('keydata')), ' ', parameters('gitrepo'), ' ', parameters('gitbranch'), ' ', parameters('dbip'), ' ', string(parameters('localslaves')), ' ', string(parameters('remoteslaves')), ' ', variables('dbport'))]"
+        },
+        "protectedSettings": {
+          "storageAccountName": "[parameters('scriptStorageAccount')]",
+          "storageAccountKey": "[listkeys(variables('scriptStorageAccountId'), variables('storageApiVersion')).key1]",
+          "storageAccountEndPoint": "https://core.windows.net"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(variables('webvmname'), copyIndex(), '/Microsoft.EnterpriseCloud.Monitoring')]",
+      "apiVersion": "[variables('vmApiVersion')]",
+      "location": "[parameters('location')]",
+      "tags": {
+        "displayName": "omsweb"
+      },
+      "copy": {
+        "name": "webomsextensionLoop",
+        "count": "[parameters('numberOfWebVM')]"
+      },
+      "dependsOn": [
+        "[concat(variables('webvmname'), copyIndex())]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.EnterpriseCloud.Monitoring",
+        "type": "OmsAgentForLinux",
+        "typeHandlerVersion": "1.0",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "workspaceId": "[parameters('omsworkspaceId')]"
+        },
+        "protectedSettings": {
+          "workspaceKey": "[parameters('omsworkspaceKey')]"
+        }
+      }
+    },
+    {
+      "apiVersion": "[variables('vmApiVersion')]",
+      "name": "[variables('lbname')]",
+      "type": "Microsoft.Network/loadBalancers",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+      ],
+      "tags": {
+        "displayName": "authorloadbalancer"
+      },
+      "properties": {
+        "frontendIpConfigurations": [
+          {
+            "name": "LoadBalancerFrontEnd",
+            "properties": {
+              "subnet": {
+                "id": "[variables('websubnetRef')]"
+              },
+              "privateIPAllocationMethod": "Dynamic"
+            }
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "[variables('bePoolName')]"
+          }
+        ],
+
+        "loadBalancingRules": [
+
+          {
+            "properties": {
+              "loadDistribution": "SourceIPProtocol",
+              "frontendIPConfiguration": {
+                "id": "[variables('frontEndIPConfigID')]"
+              },
+              "backendAddressPool": {
+                "id": "[variables('lbpoolid')]"
+              },
+              "probe": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('lbname')), '/probes/lbprobe443')]"
+              },
+              "protocol": "Tcp",
+              "frontendPort": 443,
+              "backendPort": 443,
+              "idleTimeoutInMinutes": 15
+
+            },
+            "name": "lbrule443"
+          }
+        ],
+        "probes": [
+          {
+            "properties": {
+              "protocol": "Tcp",
+              "port": 80,
+              "intervalInSeconds": 15,
+              "numberOfProbes": 2
+            },
+            "name": "lbprobe"
+          },
+          {
+            "properties": {
+              "protocol": "Tcp",
+              "port": 443,
+              "intervalInSeconds": 15,
+              "numberOfProbes": 2
+            },
+            "name": "lbprobe443"
+          }
+        ]
+      }
+    }
+  ],
+  "outputs": {
+
+
+  }
+}

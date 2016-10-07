@@ -1,0 +1,521 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "Central US"
+    },
+    "environmentPostfix": {
+      "type": "string"
+    },
+    "renderwebVMAdmin": {
+      "type": "string"
+    },
+    "shareUrl": {
+      "type": "string"
+    },
+    "shareUser": {
+      "type": "string"
+    },
+    "sharePass": {
+      "type": "securestring"
+    },
+    "renderwebsshKeyData": {
+      "type": "string",
+      "metadata": {
+        "description": "SSH rsa public key file as a string."
+      }
+    },
+    "scriptRenderWebUri": {
+      "type": "string"
+    },
+    "scriptRenderWebCommand": {
+      "type": "string"
+    },
+    "scriptStorageResourceGroup": {
+      "type": "string"
+    },
+    "scriptStorageAccount": {
+      "type": "string"
+    },
+    "dbPassword": {
+      "type": "securestring"
+    },
+    "dnccDb": {
+      "type": "string",
+      "metadata": {
+        "description": "WP Database Name."
+      }
+    },
+    "dnccUser": {
+      "type": "string",
+      "metadata": {
+        "description": "WP MySQL user name."
+      }
+    },
+    "dnccUserPass": {
+      "type": "securestring",
+      "metadata": {
+        "description": "WP MySQL user password."
+      }
+    },
+    "renderdnsLabel": {
+      "type": "string",
+      "metadata": {
+        "description": "DNS name for the Azure loadbalancer for the Web servers."
+      }
+    },
+    "renderUrl": {
+      "type": "string",
+      "metadata": {
+        "description": "URL for the render servers including http/https."
+      }
+    },
+    "renderInstanceCount": {
+      "type": "int",
+      "metadata": {
+        "description": "Number of VM instances (100 or less)."
+      },
+      "maxValue": 100
+    },
+    "keydata": {
+      "type": "securestring",
+      "metadata": {
+        "description": "base64 encoded private key used to connect to VSTS git repo"
+      }
+    },
+    "gitrepo": {
+      "type": "string",
+      "metadata": {
+        "description": "Git Repository for dncc source code."
+      }
+    },
+    "gitbranch": {
+      "type": "string"
+    },
+    "nameprefix": {
+      "type": "string"
+    },
+    "vnetname": {
+      "type": "string"
+    },
+    "subnetname": {
+      "type": "string"
+    },
+    "vaultName": {
+      "type": "string"
+    },
+    "vaultResourceGroup": {
+      "type": "string"
+    },
+    "httpssecretUrlWithVersion": {
+      "type": "string"
+    },
+    "httpscasecretUrlWithVersion": {
+      "type": "string"
+    },
+    "vmSize": {
+      "type": "string"
+    },
+    "dbip": {
+      "type": "string"
+    },
+    "localslaves": {
+      "type": "array"
+    },
+    "remoteslaves": {
+      "type": "array"
+    },
+    "isrender": {
+      "type": "int"
+    },
+    "sshprivatekey": {
+      "type": "string"
+    }
+  },
+  "variables": {
+    "namingfix": "[parameters('nameprefix')]",
+    "webprefix": "render",
+    "vmApiVersion": "2016-03-30",
+    "networkApiVersion": "2016-03-30",
+    "storageApiVersion": "2015-06-15",
+    "insightsApiVersion": "2015-04-01",
+    "storageAccountType": "Premium_LRS",
+    "webdiagnosticsStorageAccount": "[concat(substring(uniqueString(resourceGroup().id, variables('webprefix')),5), variables('webprefix'),'diagsa')]",
+    "renderwebsshKeyPath": "[concat('/home/',parameters('renderwebVMAdmin'),'/.ssh/authorized_keys')]",
+    "scriptStorageAccountId": "[resourceId( parameters('scriptStorageResourceGroup'), 'Microsoft.Storage/storageAccounts', parameters('scriptStorageAccount'))]",
+    "renderlbip": "[concat(variables('namingfix'), 'lbip')]",
+    "renderlbname": "[concat(variables('namingfix'), 'lb')]",
+    "renderbePoolName": "[concat(variables('namingfix'), 'lbepool')]",
+    "renderlbID": "[resourceId('Microsoft.Network/loadBalancers',variables('renderlbname'))]",
+    "renderfrontEndIPConfigID": "[concat(variables('renderlbID'),'/frontendIPConfigurations/renderLoadBalancerFrontEnd')]",
+    "renderlbPoolID": "[concat(variables('renderlbID'),'/backendAddressPools/', variables('renderbePoolName'))]",
+    "rendervmssname": "[concat(variables('namingfix'),'vmss', parameters('environmentPostfix'))]",
+    "autoscalename": "[concat(variables('namingfix'), 'autoscale-1', parameters('environmentPostfix'))]",
+    "vmssStorageArray": [
+      "[concat(substring(uniqueString(resourceGroup().id, '0'),5), 'rendersa0')]",
+      "[concat(substring(uniqueString(resourceGroup().id, '1'),5), 'rendersa1')]",
+      "[concat(substring(uniqueString(resourceGroup().id, '2'),5), 'rendersa2')]",
+      "[concat(substring(uniqueString(resourceGroup().id, '3'),5), 'rendersa3')]",
+      "[concat(substring(uniqueString(resourceGroup().id, '4'),5), 'rendersa4')]"
+    ],
+    "renderwadlogs": "<WadCfg><DiagnosticMonitorConfiguration>",
+    "renderwadperfcounters1": "<PerformanceCounters scheduledTransferPeriod=\"PT1M\"><PerformanceCounterConfiguration counterSpecifier=\"\\Memory\\AvailableMemory\" sampleRate=\"PT15S\" unit=\"Bytes\"><annotation displayName=\"Memory available\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Memory\\PercentAvailableMemory\" sampleRate=\"PT15S\" unit=\"Percent\"><annotation displayName=\"Mem. percent available\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Memory\\UsedMemory\" sampleRate=\"PT15S\" unit=\"Bytes\"><annotation displayName=\"Memory used\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Memory\\PercentUsedMemory\" sampleRate=\"PT15S\" unit=\"Percent\"><annotation displayName=\"Memory percentage\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Memory\\PercentUsedByCache\" sampleRate=\"PT15S\" unit=\"Percent\"><annotation displayName=\"Mem. used by cache\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Processor\\PercentIdleTime\" sampleRate=\"PT15S\" unit=\"Percent\"><annotation displayName=\"CPU idle time\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Processor\\PercentUserTime\" sampleRate=\"PT15S\" unit=\"Percent\"><annotation displayName=\"CPU user time\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Processor\\PercentProcessorTime\" sampleRate=\"PT15S\" unit=\"Percent\"><annotation displayName=\"CPU percentage guest OS\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Processor\\PercentIOWaitTime\" sampleRate=\"PT15S\" unit=\"Percent\"><annotation displayName=\"CPU IO wait time\" locale=\"en-us\"/></PerformanceCounterConfiguration>",
+    "renderwadperfcounters2": "<PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk\\BytesPerSecond\" sampleRate=\"PT15S\" unit=\"BytesPerSecond\"><annotation displayName=\"Disk total bytes\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk\\ReadBytesPerSecond\" sampleRate=\"PT15S\" unit=\"BytesPerSecond\"><annotation displayName=\"Disk read guest OS\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk\\WriteBytesPerSecond\" sampleRate=\"PT15S\" unit=\"BytesPerSecond\"><annotation displayName=\"Disk write guest OS\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk\\TransfersPerSecond\" sampleRate=\"PT15S\" unit=\"CountPerSecond\"><annotation displayName=\"Disk transfers\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk\\ReadsPerSecond\" sampleRate=\"PT15S\" unit=\"CountPerSecond\"><annotation displayName=\"Disk reads\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk\\WritesPerSecond\" sampleRate=\"PT15S\" unit=\"CountPerSecond\"><annotation displayName=\"Disk writes\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk\\AverageReadTime\" sampleRate=\"PT15S\" unit=\"Seconds\"><annotation displayName=\"Disk read time\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk\\AverageWriteTime\" sampleRate=\"PT15S\" unit=\"Seconds\"><annotation displayName=\"Disk write time\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk\\AverageTransferTime\" sampleRate=\"PT15S\" unit=\"Seconds\"><annotation displayName=\"Disk transfer time\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk\\AverageDiskQueueLength\" sampleRate=\"PT15S\" unit=\"Count\"><annotation displayName=\"Disk queue length\" locale=\"en-us\"/></PerformanceCounterConfiguration></PerformanceCounters>",
+    "renderwadcfgxstart": "[concat(variables('renderwadlogs'),variables('renderwadperfcounters1'),variables('renderwadperfcounters2'),'<Metrics resourceId=\"')]",
+    "renderwadmetricsresourceid": "[concat('/subscriptions/',subscription().subscriptionId,'/resourceGroups/',resourceGroup().name ,'/providers/','Microsoft.Compute/virtualMachineScaleSets/',variables('rendervmssname'))]",
+    "renderwadcfgxend": "[concat('\"><MetricAggregation scheduledTransferPeriod=\"PT1H\"/><MetricAggregation scheduledTransferPeriod=\"PT1M\"/></Metrics></DiagnosticMonitorConfiguration></WadCfg>')]",
+    "imageReferences": {
+      "renderweb": {
+        "publisher": "Canonical",
+        "offer": "UbuntuServer",
+        "sku": "14.04.2-LTS",
+        "version": "latest"
+      }
+    },
+    "dbport": "5306"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[variables('webdiagnosticsStorageAccount')]",
+      "apiVersion": "[variables('storageApiVersion')]",
+      "location": "[parameters('location')]",
+      "tags": {
+        "displayName": "webdiagnosticstorage2"
+      },
+      "properties": {
+        "accountType": "Standard_LRS"
+      }
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "[variables('networkapiversion')]",
+      "name": "[variables('renderlbip')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic",
+        "idleTimeoutInMinutes": 4,
+        "dnsSettings": {
+          "domainNameLabel": "[parameters('renderdnsLabel')]"
+        }
+      },
+      "tags": {
+        "displayName": "renderlbIP"
+      }
+    },
+    {
+      "type": "Microsoft.Network/loadBalancers",
+      "name": "[variables('renderlbname')]",
+      "location": "[parameters('location')]",
+      "apiVersion": "[variables('networkApiVersion')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('renderlbip'))]"
+      ],
+      "tags": {
+        "displayName": "RENDERLB"
+      },
+      "properties": {
+        "frontendIPConfigurations": [
+          {
+            "name": "renderLoadBalancerFrontEnd",
+            "properties": {
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('renderlbip'))]"
+              }
+            }
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "[variables('renderbePoolName')]"
+          }
+        ],
+        "loadBalancingRules": [
+          {
+            "name": "HTTPLBRule",
+            "properties": {
+              "loadDistribution": "Default",
+              "frontendIPConfiguration": {
+                "id": "[variables('renderfrontEndIPConfigID')]"
+              },
+              "backendAddressPool": {
+                "id": "[variables('renderlbPoolID')]"
+              },
+              "protocol": "Tcp",
+              "frontendPort": 80,
+              "backendPort": 80,
+              "enableFloatingIP": false,
+              "idleTimeoutInMinutes": 5,
+              "probe": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('renderlbname')), '/probes/renderlbprobe')]"
+              }
+            }
+          },
+          {
+            "name": "HTTPSLBRule",
+            "properties": {
+              "loadDistribution": "Default",
+              "frontendIPConfiguration": {
+                "id": "[variables('renderfrontEndIPConfigID')]"
+              },
+              "backendAddressPool": {
+                "id": "[variables('renderlbPoolID')]"
+              },
+              "protocol": "Tcp",
+              "frontendPort": 443,
+              "backendPort": 443,
+              "enableFloatingIP": false,
+              "idleTimeoutInMinutes": 5,
+              "probe": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('renderlbname')), '/probes/renderlbprobe443')]"
+              }
+            }
+          }
+        ],
+        "probes": [
+          {
+            "name": "renderlbprobe",
+            "properties": {
+              "protocol": "Tcp",
+              "port": 80,
+              "intervalInSeconds": 5,
+              "numberOfProbes": 2
+            }
+          },
+          {
+            "name": "renderlbprobe443",
+            "properties": {
+              "protocol": "Tcp",
+              "port": 443,
+              "intervalInSeconds": 5,
+              "numberOfProbes": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[variables('vmssStorageArray')[copyIndex()]]",
+      "location": "[parameters('location')]",
+      "apiVersion": "[variables('storageApiVersion')]",
+      "tags": {
+        "displayName": "rendervmssstorage"
+      },
+      "copy": {
+        "name": "rendervmsssaloop",
+        "count": "[length(variables('vmssStorageArray'))]"
+      },
+      "properties": {
+        "accountType": "[variables('storageAccountType')]"
+      }
+    },
+    {
+      "type": "Microsoft.Insights/autoscaleSettings",
+      "apiVersion": "[variables('insightsApiVersion')]",
+      "name": "[variables('autoscalename')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[variables('rendervmssname')]"
+      ],
+      "properties": {
+        "name": "[variables('autoscalename')]",
+        "targetResourceUri": "[concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',  resourceGroup().name, '/providers/Microsoft.Compute/virtualMachineScaleSets/', variables('rendervmssname'))]",
+        "enabled": true,
+        "profiles": [
+          {
+            "name": "Profile1",
+            "capacity": {
+              "minimum": 10,
+              "maximum": "[parameters('renderInstanceCount')]",
+              "default": 10
+            },
+            "rules": [
+              {
+                "metricTrigger": {
+                  "metricName": "\\Processor\\PercentProcessorTime",
+                  "metricNamespace": "",
+                  "metricResourceUri": "[concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',  resourceGroup().name, '/providers/Microsoft.Compute/virtualMachineScaleSets/', variables('rendervmssname'))]",
+                  "timeGrain": "PT1M",
+                  "statistic": "Average",
+                  "timeWindow": "PT5M",
+                  "timeAggregation": "Average",
+                  "operator": "GreaterThan",
+                  "threshold": 60.0
+                },
+                "scaleAction": {
+                  "direction": "Increase",
+                  "type": "ChangeCount",
+                  "value": 1,
+                  "cooldown": "PT1M"
+                }
+              },
+              {
+                "metricTrigger": {
+                  "metricName": "\\Processor\\PercentProcessorTime",
+                  "metricNamespace": "",
+                  "metricResourceUri": "[concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',  resourceGroup().name, '/providers/Microsoft.Compute/virtualMachineScaleSets/', variables('rendervmssname'))]",
+                  "timeGrain": "PT1M",
+                  "statistic": "Average",
+                  "timeWindow": "PT5M",
+                  "timeAggregation": "Average",
+                  "operator": "LessThan",
+                  "threshold": 50.0
+                },
+                "scaleAction": {
+                  "direction": "Decrease",
+                  "type": "ChangeCount",
+                  "value": 1,
+                  "cooldown": "PT1M"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachineScaleSets",
+      "name": "[variables('rendervmssname')]",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "[variables('vmApiVersion')]",
+      "dependsOn": [
+        "rendervmsssaloop",
+        "[concat('Microsoft.Network/loadBalancers/', variables('renderlbname'))]"
+      ],
+      "sku": {
+        "name": "[parameters('vmSize')]",
+        "tier": "Standard",
+        "capacity": "[parameters('renderInstanceCount')]"
+      },
+      "tags": {
+        "displayName": "rendervmsss"
+      },
+      "properties": {
+        "overprovision": "true",
+        "upgradePolicy": {
+          "mode": "Manual"
+        },
+        "virtualMachineProfile": {
+          "storageProfile": {
+            "osDisk": {
+              "vhdContainers": [
+                "[concat('https://', variables('vmssStorageArray')[0], '.blob.core.windows.net/', 'rendervhd')]",
+                "[concat('https://', variables('vmssStorageArray')[1],  '.blob.core.windows.net/', 'rendervhd')]",
+                "[concat('https://', variables('vmssStorageArray')[2], '.blob.core.windows.net/', 'rendervhd')]",
+                "[concat('https://', variables('vmssStorageArray')[3],  '.blob.core.windows.net/', 'rendervhd')]",
+                "[concat('https://', variables('vmssStorageArray')[4],  '.blob.core.windows.net/', 'rendervhd')]"
+              ],
+              "name": "[concat(variables('namingfix'), 'osDisk')]",
+              "caching": "ReadOnly",
+              "createOption": "FromImage"
+            },
+            "imageReference": "[variables('imagereferences').renderweb]"
+          },
+          "osProfile": {
+            "computerNamePrefix": "[variables('rendervmssname')]",
+            "adminUsername": "[parameters('renderwebVMAdmin')]",
+            "linuxConfiguration": {
+              "disablePasswordAuthentication": true,
+              "ssh": {
+                "publicKeys": [
+                  {
+                    "path": "[variables('renderwebsshKeyPath')]",
+                    "keyData": "[parameters('renderwebsshKeyData')]"
+                  }
+                ]
+              }
+            },
+            "secrets": [
+              {
+                "sourceVault": {
+                  "id": "[resourceId(parameters('vaultResourceGroup'), 'Microsoft.KeyVault/vaults', parameters('vaultName'))]"
+                },
+                "vaultCertificates": [
+                  {
+                    "certificateUrl": "[parameters('httpssecretUrlWithVersion')]"
+                  },
+                  {
+                    "certificateUrl": "[parameters('httpscasecretUrlWithVersion')]"
+                  }
+                ]
+              }
+            ]
+          },
+          "networkProfile": {
+            "networkInterfaceConfigurations": [
+              {
+                "name": "[concat(variables('webprefix'),'rendernic')]",
+                "properties": {
+                  "primary": true,
+                  "ipConfigurations": [
+                    {
+                      "name": "[concat(variables('namingfix'), 'renderipconfig')]",
+                      "properties": {
+                        "subnet": {
+                          "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/virtualNetworks/', parameters('vnetname'),'/subnets/', parameters('subnetname'))]"
+                        },
+                        "loadBalancerBackendAddressPools": [
+                          {
+                            "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/loadBalancers/', variables('renderlbname'), '/backendAddressPools/', variables('renderbePoolName'))]"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "extensionProfile": {
+            "extensions": [
+              {
+                "name": "lapextension",
+                "properties": {
+                  "publisher": "Microsoft.OSTCExtensions",
+                  "type": "CustomScriptForLinux",
+                  "typeHandlerVersion": "1.4",
+                  "forceUpdateTag": "v.1.3",
+                  "autoUpgradeMinorVersion": false,
+                  "settings": {
+                    "fileUris": [
+                      "[concat(parameters('scriptRenderWebUri'), '/', parameters('scriptrenderWebCommand'))]",
+                      "[concat(parameters('scriptRenderWebUri'), '/', 'setup_hyperdb.sh')]",
+                      "[concat(parameters('scriptRenderWebUri'), '/', 'setup_sshkey.sh')]"
+                    ],
+                    "commandToExecute": "[concat('bash ', parameters('scriptrenderWebCommand'), ' ', parameters('dbip'), ' ', parameters('dnccDb'), ' ', parameters('dnccUser'), ' ', parameters('dnccUserPass'), ' ', parameters('isRender'), ' ', parameters('renderUrl'), ' ', parameters('shareUrl'), ' ', parameters('shareUser'), ' ', parameters('sharePass'), ' ', base64(parameters('keydata')), ' ', parameters('gitrepo'), ' ', parameters('gitbranch'), ' ', parameters('dbip'),' ', string(parameters('localslaves')), ' ', string(parameters('remoteslaves')), ' ', variables('dbport'), ' ', parameters('renderWebVMAdmin'), ' ', base64(parameters('sshprivatekey')))]"
+                  },
+                  "protectedSettings": {
+                    "storageAccountName": "[parameters('scriptStorageAccount')]",
+                    "storageAccountKey": "[listkeys(variables('scriptStorageAccountId'), variables('storageApiVersion')).key1]",
+                    "storageAccountEndPoint": "https://core.windows.net"
+                  }
+                }
+              },
+              {
+                "name": "LinuxDiagnostic",
+                "properties": {
+                  "publisher": "Microsoft.OSTCExtensions",
+                  "type": "LinuxDiagnostic",
+                  "typeHandlerVersion": "2.1",
+                  "autoUpgradeMinorVersion": true,
+                  "settings": {
+                    "xmlCfg": "[base64(concat(variables('renderwadcfgxstart'),variables('renderwadmetricsresourceid'),variables('renderwadcfgxend')))]",
+                    "storageAccount": "[variables('webdiagnosticsStorageAccount')]"
+                  },
+                  "protectedSettings": {
+                    "storageAccountName": "[variables('webdiagnosticsStorageAccount')]",
+                    "storageAccountKey": "[listkeys(variables('webdiagnosticsStorageAccount'), variables('storageApiVersion')).key1]",
+                    "storageAccountEndPoint": "https://core.windows.net"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
