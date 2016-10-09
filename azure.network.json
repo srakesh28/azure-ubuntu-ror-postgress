@@ -49,7 +49,7 @@
       "addressPrefix": "[parameters('baseaddress')]",
       "dbSubnet": {
         "name": "subnetdb",
-        "prefix": "[concat( variables('dbsubnetFirst3'), '.0/28')]",
+        "prefix": "[concat( variables('dbsubnetFirst3'), '.0/24')]",
 
         "nsgName": "nsgdbsubnet"
       },
