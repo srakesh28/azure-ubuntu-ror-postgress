@@ -156,10 +156,10 @@
       }
     },
     "networkSettings": {
-      "vnetName": "[variables('vnetSettings')]",
+      "vnetName": "[variables('vnetSettings')]"
            
     },
-    "6": {
+    "availabilitySetSetting": {
       "name": "pgsqlAvailabilitySet",
       "fdCount": 3,
       "udCount": 5
