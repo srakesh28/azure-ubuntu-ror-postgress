@@ -11,7 +11,7 @@
     "domainName": {
       "type": "string",
       "metadata": {
-        "description": "Domain name of the public webserver"
+        "description": "Domain name of the public jumpbox"
       }
     },
     "adminUsername": {
@@ -46,7 +46,7 @@
         "description": "The replication password used for PostgreSQL streaming replication"
       }
     },
-    "webserver": {
+    "jumpbox": {
       "type": "string",
       "defaultValue": "Disabled",
       "allowedValues": [
@@ -54,7 +54,7 @@
         "Disabled"
       ],
       "metadata": {
-        "description": "The flag allowing to enable or disable provisioning of the webserver VM that can be used to access the PostgreSQL environment"
+        "description": "The flag allowing to enable or disable provisioning of the jumpbox VM that can be used to access the PostgreSQL environment"
       }
     },
     "virtualNetworkName": {
@@ -63,16 +63,7 @@
       "metadata": {
         "description": "Virtual network name"
       }
-    },
-	
-	"nsgs": {
-      "type": "string",
-      "defaultValue": "datansg",
-      "metadata": {
-        "description": "NSG Name name"
-      }
     }
-	
   },
   "variables": {
     "templateBaseUrl": "https://raw.githubusercontent.com/srakesh28/azure-ubuntu-ror-postgress/master/postgresql-on-ubuntu/",
@@ -91,7 +82,7 @@
           0,
           0
         ],
-        "webserver": 0
+        "jumpbox": 0
       }
     },
     "tshirtSizeMedium": {
@@ -108,7 +99,7 @@
           0,
           1
         ],
-        "webserver": 0
+        "jumpbox": 0
       }
     },
     "tshirtSizeLarge": {
@@ -126,7 +117,7 @@
           1,
           1
         ],
-        "webserver": 0
+        "jumpbox": 0
       }
     },
     "tshirtSizeXLarge": {
@@ -145,13 +136,13 @@
           1,
           1
         ],
-        "webserver": 0
+        "jumpbox": 0
       }
     },
     "tshirtSize": "[variables(concat('tshirtSize', parameters('tshirtSize')))]",
-    "webserverTemplateEnabled": "webserver-resources.json",
-    "webserverTemplateDisabled": "empty-resources.json",
-    "webserverTemplateUrl": "[concat(variables('templateBaseUrl'), variables(concat('webserverTemplate',parameters('webserver'))))]",
+    "jumpboxTemplateEnabled": "jumpbox-resources.json",
+    "jumpboxTemplateDisabled": "empty-resources.json",
+    "jumpboxTemplateUrl": "[concat(variables('templateBaseUrl'), variables(concat('jumpboxTemplate',parameters('jumpbox'))))]",
     "osSettings": {
       "scripts": [
         "[concat(variables('templateBaseUrl'), 'install_postgresql.sh')]",
@@ -212,6 +203,9 @@
           },
           "availabilitySetSettings": {
             "value": "[variables('availabilitySetSettings')]"
+          },
+		  "webavailabilitySetSettings": {
+            "value": "[variables('webavailabilitySetSettings')]"
           }
         }
       }
@@ -321,7 +315,7 @@
       }
     },
     {
-      "name": "webserver",
+      "name": "jumpbox",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2015-01-01",
       "dependsOn": [
@@ -330,13 +324,13 @@
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "[variables('webserverTemplateUrl')]",
+          "uri": "[variables('jumpboxTemplateUrl')]",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
           "storageSettings": {
             "value": {
-              "name": "[concat(parameters('storageAccountNamePrefix'), variables('tshirtSize').storage.webserver)]"
+              "name": "[concat(parameters('storageAccountNamePrefix'), variables('tshirtSize').storage.jumpbox)]"
             }
           },
           "dnsName": {
@@ -345,7 +339,7 @@
           "commonSettings": {
             "value": {
               "adminUsername": "[parameters('adminUsername')]",
-              "namespace": "webserver"
+              "namespace": "jumpbox"
             }
           },
           "adminPassword": {
@@ -356,6 +350,12 @@
           },
           "osSettings": {
             "value": "[variables('osSettings')]"
+          },
+		 
+		 "machineSettings": {
+            "value": {
+            "availabilitySet": "[variables('webavailabilitySetSettings').name]"
+            }
           }
         }
       }
