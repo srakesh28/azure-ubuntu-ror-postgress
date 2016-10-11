@@ -175,8 +175,20 @@
       "name": "pgsqlAvailabilitySet",
       "fdCount": 3,
       "udCount": 5
-    }
-  },
+    },
+	
+	"webavailabilitySetSettings": {
+      "name": "webAvailabilitySet",
+      "fdCount": 3,
+      "udCount": 5
+    },
+	
+	"nsgs": {
+      "nsgName": "datansg"
+       }
+    },
+	
+
   "resources": [
     {
       "name": "shared",
@@ -197,7 +209,11 @@
           },
           "availabilitySetSettings": {
             "value": "[variables('availabilitySetSettings')]"
+          },
+		  "webavailabilitySetSettings": {
+            "value": "[variables('webavailabilitySetSettings')]"
           }
+		  
         }
       }
     },
