@@ -1,0 +1,185 @@
+ {
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "storageSettings": {
+      "type": "object"
+    },
+    "availabilitySetSettings": {
+      "type": "object"
+    },
+	
+	"webavailabilitySetSettings": {
+      "type": "object"
+    },
+    "networkSettings": {
+      "type": "object"
+    },
+	
+	"WebAppNSGName": {
+      "type": "object"
+    },
+	
+	
+	"DBNSGName": {
+      "type": "object"
+    }
+	
+  },
+  "variables": {},
+  "resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[concat(parameters('storageSettings').name, copyindex())]",
+      "apiVersion": "2015-05-01-preview",
+      "location": "[resourceGroup().location]",
+      "copy": {
+        "name": "dbStoragePoolLoop",
+        "count": "[parameters('storageSettings').count]"
+      },
+      "properties": {
+        "accountType": "Standard_LRS"
+      }
+    },
+    {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "[parameters('networkSettings').vnetName]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[parameters('networkSettings').addressPrefix]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[parameters('networkSettings').subnets.dmz.name]",
+            "properties": {
+              "addressPrefix": "[parameters('networkSettings').subnets.dmz.prefix]"
+            }
+          },
+          {
+            "name": "[parameters('networkSettings').subnets.data.name]",
+            "properties": {
+              "addressPrefix": "[parameters('networkSettings').subnets.data.prefix]"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Compute/availabilitySets",
+      "name": "[parameters('availabilitySetSettings').name]",
+      "apiVersion": "2015-05-01-preview",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "platformFaultDomainCount": "[parameters('availabilitySetSettings').fdCount]",
+        "platformUpdateDomainCount": "[parameters('availabilitySetSettings').udCount]"
+      }
+    },
+	
+	{
+      "type": "Microsoft.Compute/availabilitySets",
+      "name": "[parameters('webavailabilitySetSettings').name]",
+      "apiVersion": "2015-05-01-preview",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "platformFaultDomainCount": "[parameters('webavailabilitySetSettings').fdCount]",
+        "platformUpdateDomainCount": "[parameters('webavailabilitySetSettings').udCount]"
+      }
+    },
+	
+	{
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "[parameters('WebAppNSGName')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "ssh_rule",
+            "properties": {
+              "description": "Allow SSH",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "Internet",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "web_rule",
+            "properties": {
+              "description": "Allow WEB http",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "80",
+              "sourceAddressPrefix": "Internet",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 101,
+              "direction": "Inbound"
+            }
+          },
+		  {
+            "name": "webs_rule",
+            "properties": {
+              "description": "Allow WEB https",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "443",
+              "sourceAddressPrefix": "Internet",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 102,
+              "direction": "Inbound"
+            }
+          }
+        ]
+      }
+    },
+    
+    {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "[parameters('DBNSGName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "Allow_WebApp",
+            "properties": {
+              "description": "Allow Web Subnet",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "5432",
+              "sourceAddressPrefix": "10.0.0.0/24",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
+            }
+          },
+		  
+          {
+            "name": "Block_Web",
+            "properties": {
+              "description": "Block FE Subnet",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "10.0.0.0/24",
+              "destinationAddressPrefix": "*",
+              "access": "Deny",
+              "priority": 102,
+              "direction": "Inbound"
+            }
+          }
+	
+  ],
+  "outputs": {}
+}
