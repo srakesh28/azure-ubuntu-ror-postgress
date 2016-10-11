@@ -104,7 +104,31 @@
           ]
         }
       }
-    }
+    },
+	
+	{
+	"type": "Microsoft.Compute/virtualMachines/extensions",
+	"name": "install_ror.sh",
+	"apiVersion": "2015-05-01-preview",
+	"location": "[resourceGroup().location]",
+	"copy": {
+	"name": "extensionLoop"
+	},
+	
+	"properties":
+	{
+	  "publisher": "Microsoft.Azure.Extensions",
+	  "type": "CustomScript",
+	  "typeHandlerVersion": "2.0",
+	  "autoUpgradeMinorVersion": true,
+	  "settings": {
+	  "fileUris": ["https://raw.githubusercontent.com/srakesh28/azure-ubuntu-ror-postgress/master/postgresql-on-ubuntu/install_ror.sh"],
+	  "commandToExecute": "bash install_ror.sh"
+	  }
+
+	  }
+
+}
   ],
   "outputs": {}
 }

@@ -46,7 +46,7 @@
         "description": "The replication password used for PostgreSQL streaming replication"
       }
     },
-    "jumpbox": {
+    "webserver": {
       "type": "string",
       "defaultValue": "Disabled",
       "allowedValues": [
@@ -54,7 +54,7 @@
         "Disabled"
       ],
       "metadata": {
-        "description": "The flag allowing to enable or disable provisioning of the jumpbox VM that can be used to access the PostgreSQL environment"
+        "description": "The flag allowing to enable or disable provisioning of the webserver VM that can be used to access the PostgreSQL environment"
       }
     },
     "virtualNetworkName": {
@@ -82,7 +82,7 @@
           0,
           0
         ],
-        "jumpbox": 0
+        "webserver": 0
       }
     },
     "tshirtSizeMedium": {
@@ -99,7 +99,7 @@
           0,
           1
         ],
-        "jumpbox": 0
+        "webserver": 0
       }
     },
     "tshirtSizeLarge": {
@@ -117,7 +117,7 @@
           1,
           1
         ],
-        "jumpbox": 0
+        "webserver": 0
       }
     },
     "tshirtSizeXLarge": {
@@ -136,13 +136,13 @@
           1,
           1
         ],
-        "jumpbox": 0
+        "webserver": 0
       }
     },
     "tshirtSize": "[variables(concat('tshirtSize', parameters('tshirtSize')))]",
-    "jumpboxTemplateEnabled": "jumpbox-resources.json",
-    "jumpboxTemplateDisabled": "empty-resources.json",
-    "jumpboxTemplateUrl": "[concat(variables('templateBaseUrl'), variables(concat('jumpboxTemplate',parameters('jumpbox'))))]",
+    "webserverTemplateEnabled": "webserver-resources.json",
+    "webserverTemplateDisabled": "empty-resources.json",
+    "webserverTemplateUrl": "[concat(variables('templateBaseUrl'), variables(concat('webserverTemplate',parameters('webserver'))))]",
     "osSettings": {
       "scripts": [
         "[concat(variables('templateBaseUrl'), 'install_postgresql.sh')]",
@@ -305,7 +305,8 @@
         }
       }
     },
-    {
+    
+	{
       "name": "webserver",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2015-01-01",
@@ -342,9 +343,7 @@
           "osSettings": {
             "value": "[variables('osSettings')]"
           },
-		  "storageSettings": {
-            "value": "[variables('tshirtSize').storage]"
-          },
+		  
           "machineSettings": {
             "value": {
               "vmSize": "[variables('tshirtSize').vmSize]",
