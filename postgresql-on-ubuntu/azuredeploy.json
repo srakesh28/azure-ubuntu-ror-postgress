@@ -11,7 +11,7 @@
     "domainName": {
       "type": "string",
       "metadata": {
-        "description": "Domain name of the public jumpbox"
+        "description": "Domain name of the public webserver"
       }
     },
     "adminUsername": {
@@ -63,7 +63,16 @@
       "metadata": {
         "description": "Virtual network name"
       }
+    },
+	
+	"nsgs": {
+      "type": "string",
+      "defaultValue": "datansg",
+      "metadata": {
+        "description": "NSG Name name"
+      }
     }
+	
   },
   "variables": {
     "templateBaseUrl": "https://raw.githubusercontent.com/srakesh28/azure-ubuntu-ror-postgress/master/postgresql-on-ubuntu/",
@@ -181,14 +190,8 @@
       "name": "webAvailabilitySet",
       "fdCount": 3,
       "udCount": 5
-    },
-	
-	"nsgs": {
-      "nsgName": "datansg"
-       }
-    },
-	
-
+    }
+  },
   "resources": [
     {
       "name": "shared",
@@ -209,11 +212,7 @@
           },
           "availabilitySetSettings": {
             "value": "[variables('availabilitySetSettings')]"
-          },
-		  "webavailabilitySetSettings": {
-            "value": "[variables('webavailabilitySetSettings')]"
           }
-		  
         }
       }
     },
@@ -321,8 +320,7 @@
         }
       }
     },
-    
-	{
+    {
       "name": "webserver",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2015-01-01",
@@ -358,15 +356,6 @@
           },
           "osSettings": {
             "value": "[variables('osSettings')]"
-          },
-		  
-          "machineSettings": {
-            "value": {
-              "vmSize": "[variables('tshirtSize').vmSize]",
-              "diskSize": "[variables('tshirtSize').diskSize]",
-              "vmCount": "[variables('tshirtSize').slaveCount]",
-              "availabilitySet": "[variables('webavailabilitySetSettings').name]"
-            }
           }
         }
       }
