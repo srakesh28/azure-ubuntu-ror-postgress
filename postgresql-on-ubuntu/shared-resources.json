@@ -64,10 +64,10 @@
 	{
       "apiVersion": "2015-05-01-preview",
       "type": "Microsoft.Network/networkSecurityGroups",
-      "name": "datansg",
+      "name": "nsgs",
       "location": "[resourceGroup().location]",
       "tags": {
-        "displayName": "datansg"
+      "displayName": "datansg"
       },
       "properties": {
         "securityRules": [
