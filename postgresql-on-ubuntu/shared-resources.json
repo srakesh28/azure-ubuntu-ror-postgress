@@ -115,12 +115,12 @@
     },
 	{
       "type": "Microsoft.Compute/availabilitySets",
-      "name": "[parameters('webavailabilitySetSettings').name]",
+      "name": "[variables('webavailabilitySetSettings').name]",
       "apiVersion": "2015-05-01-preview",
       "location": "[resourceGroup().location]",
       "properties": {
-        "platformFaultDomainCount": "[parameters('webavailabilitySetSettings').fdCount]",
-        "platformUpdateDomainCount": "[parameters('webavailabilitySetSettings').udCount]"
+        "platformFaultDomainCount": "[variables('webavailabilitySetSettings').fdCount]",
+        "platformUpdateDomainCount": "[variables('webavailabilitySetSettings').udCount]"
       }
     }
   ],
