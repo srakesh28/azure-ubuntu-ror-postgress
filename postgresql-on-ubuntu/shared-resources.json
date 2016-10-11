@@ -1,4 +1,4 @@
-{
+ {
   "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
@@ -9,10 +9,10 @@
       "type": "object"
     },
 	
-    "networkSettings": {
+	"webavailabilitySetSettings": {
       "type": "object"
     },
-	"nsgs": {
+    "networkSettings": {
       "type": "object"
     }
   },
@@ -58,49 +58,6 @@
         ]
       }
     },
-	
-	{
-      "apiVersion": "2015-05-01-preview",
-      "type": "Microsoft.Network/networkSecurityGroups",
-      "name": "[parameters('nsgs').name]",
-      "location": "[resourceGroup().location]",
-      "tags": {
-      "displayName": "datansg"
-      },
-      "properties": {
-        "securityRules": [
-          {
-            "name": "Allow_Web",
-            "properties": {
-              "description": "Allow web Subnet",
-              "protocol": "Tcp",
-              "sourcePortRange": "*",
-              "destinationPortRange": "5432",
-              "sourceAddressPrefix": "[parameters('networkSettings').subnets.dmz.prefix]",
-              "destinationAddressPrefix": "*",
-              "access": "Allow",
-              "priority": 100,
-              "direction": "Inbound"
-            }
-          },
-       
-          {
-            "name": "denyotherssh",
-            "properties": {
-              "protocol": "Tcp",
-              "sourcePortRange": "*",
-              "destinationPortRange": "22",
-              "sourceAddressPrefix": "[parameters('networkSettings').vnetName]",
-              "destinationAddressPrefix": "*",
-              "access": "Deny",
-              "priority": 400,
-              "direction": "Inbound"
-            }
-          }
-        ]
-      }
-    },
-	
     {
       "type": "Microsoft.Compute/availabilitySets",
       "name": "[parameters('availabilitySetSettings').name]",
@@ -110,8 +67,19 @@
         "platformFaultDomainCount": "[parameters('availabilitySetSettings').fdCount]",
         "platformUpdateDomainCount": "[parameters('availabilitySetSettings').udCount]"
       }
+    },
+	
+	{
+      "type": "Microsoft.Compute/availabilitySets",
+      "name": "[parameters('webavailabilitySetSettings').name]",
+      "apiVersion": "2015-05-01-preview",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "platformFaultDomainCount": "[parameters('webavailabilitySetSettings').fdCount]",
+        "platformUpdateDomainCount": "[parameters('webavailabilitySetSettings').udCount]"
+      }
     }
-
+	
   ],
   "outputs": {}
 }
