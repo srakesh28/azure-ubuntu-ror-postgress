@@ -323,9 +323,7 @@
 			"name": "web1-node",
 			"type": "Microsoft.Resources/deployments",
 			"apiVersion": "2015-01-01",
-			"dependsOn": [
-				"[concat('Microsoft.Resources/deployments/', 'web1-node')]"
-			],
+			
 			"properties": {
 				"mode": "Incremental",
 				"templateLink": {
