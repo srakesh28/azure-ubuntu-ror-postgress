@@ -112,17 +112,8 @@
         "platformFaultDomainCount": "[parameters('availabilitySetSettings').fdCount]",
         "platformUpdateDomainCount": "[parameters('availabilitySetSettings').udCount]"
       }
-    },
-	{
-      "type": "Microsoft.Compute/availabilitySets",
-      "name": "[variables('webavailabilitySetSettings').name]",
-      "apiVersion": "2015-05-01-preview",
-      "location": "[resourceGroup().location]",
-      "properties": {
-        "platformFaultDomainCount": "[variables('webavailabilitySetSettings').fdCount]",
-        "platformUpdateDomainCount": "[variables('webavailabilitySetSettings').udCount]"
-      }
     }
+
   ],
   "outputs": {}
 }
