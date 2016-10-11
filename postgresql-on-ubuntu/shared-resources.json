@@ -8,9 +8,7 @@
     "availabilitySetSettings": {
       "type": "object"
     },
-	"webavailabilitySetSettings": {
-      "type": "object"
-    },
+	
     "networkSettings": {
       "type": "object"
     },
