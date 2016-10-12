@@ -1,3 +1,37 @@
+<<<<<<< HEAD
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "storageAccountNamePrefix": {
+      "value": "GEN-UNIQUE-8"
+    },
+    "adminUsername": {
+      "value": "adminuser"
+    },
+    "adminPassword": {
+      "value": "GEN-PASSWORD"
+    },
+    "domainName": {
+      "value": "GEN-UNIQUE-8"
+    },
+    "replicatorPassword": {
+      "value": "GEN-PASSWORD"
+    },
+    "jumpbox": {
+      "value": "Enabled"
+    }
+	"DBNSGName": {
+ 			"value": "dbnsg"
+ 		},
+		
+ 	"WebNSGName": {
+ 			"value": "webnsg"
+ 		}
+	
+  }
+}
+=======
 {
   "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
   "contentVersion": "1.0.0.0",
@@ -31,3 +65,4 @@
 	
   }
 }
+>>>>>>> origin/master

@@ -330,6 +330,8 @@
           }
         }
       }
+<<<<<<< HEAD
+=======
     },
     {
       "name": "webserver",
@@ -376,7 +378,9 @@
           }
         }
       }
+>>>>>>> origin/master
     }
+
   ],
   "outputs": {}
 }
