@@ -1,4 +1,4 @@
-    {
+ {
  	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
  	"contentVersion": "1.0.0.0",
  	"parameters": {
@@ -14,11 +14,11 @@
  		},
 
  		"WebAppNSGName": {
- 			"type": "object"
+ 			"type": "string"
  		},
 
  		"DBAppNSGName": {
- 			"type": "object"
+ 			"type": "string"
  		},
  		"networkSettings": {
  			"type": "object"
@@ -85,7 +85,7 @@
  		{
  			"apiVersion": "2015-05-01-preview",
  			"type": "Microsoft.Network/networkSecurityGroups",
- 			"name": "[parameters('WebAppNSGName')]",
+ 			"name": "[parameters('WebAppNSGName').name]",
  			"location": "[resourceGroup().location]",
  			"properties": {
  				"securityRules": [{
@@ -134,7 +134,7 @@
  		{
  			"apiVersion": "2015-05-01-preview",
  			"type": "Microsoft.Network/networkSecurityGroups",
- 			"name": "[parameters('DBNSGName')]",
+ 			"name": "[parameters('DBNSGName').name]",
  			"location": "[resourceGroup().location]",
  			"properties": {
  				"securityRules": [{
