@@ -14,11 +14,11 @@
  		},
 
  		"WebAppNSGName": {
- 			"type": "string"
+ 			"type": "object"
  		},
 
  		"DBAppNSGName": {
- 			"type": "string"
+ 			"type": "object"
  		},
  		"networkSettings": {
  			"type": "object"
