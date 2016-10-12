@@ -19,6 +19,15 @@
     },
     "jumpbox": {
       "value": "Enabled"
-    }
+    },
+	
+	"DBNSGName": {
+ 			"value": "dbnsg"
+ 		},
+		
+ 	"WebNSGName": {
+ 			"value": "webnsg"
+ 		}
+	
   }
 }
