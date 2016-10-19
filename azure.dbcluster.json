@@ -30,12 +30,6 @@
 				"description": "SSH rsa public key file as a string."
 			}
 		},
-		"scriptDBUriPath": {
-			"type": "string"
-		},
-		"scriptDBFile": {
-			"type": "string"
-		},
 
 		"dbPassword": {
 			"type": "securestring"
@@ -50,17 +44,9 @@
 
 		"ipaddressrange": {
 			"type": "string"
-		},
-
-		"shareUrl": {
-			"type": "string"
-		},
-		"shareUser": {
-			"type": "string"
-		},
-		"sharePass": {
-			"type": "securestring"
 		}
+
+
 	},
 	"variables": {
 		"vmApiVersion": "2016-03-30",
@@ -242,9 +228,9 @@
 				"autoUpgradeMinorVersion": false,
 				"settings": {
 					"fileUris": [
-						"[concat(parameters('scriptdbUriPath'), '/', parameters('scriptDBFile'))]"
+						"https://raw.githubusercontent.com/srakesh28/azure-ubuntu-ror-postgress/master/install_postgresql.sh"
 					],
-					"commandToExecute": "[concat( 'bash ', parameters('scriptDBFile')]"
+					"commandToExecute": "[bash install_postgresql.sh]"
 				}
 
 			}
