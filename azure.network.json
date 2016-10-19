@@ -226,7 +226,20 @@
               "direction": "Inbound"
             }
           },
-          {
+           {
+            "name": "WebAllow-80",
+            "properties": {
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "80",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 200,
+              "direction": "Inbound"
+            }
+          },
+         {
             "name": "WebAllow-443",
             "properties": {
               "protocol": "Tcp",
@@ -235,7 +248,7 @@
               "sourceAddressPrefix": "VirtualNetwork",
               "destinationAddressPrefix": "*",
               "access": "Allow",
-              "priority": 200,
+              "priority": 300,
               "direction": "Inbound"
             }
           },
@@ -248,7 +261,7 @@
               "sourceAddressPrefix": "[variables('vpnclientipprefix')]",
               "destinationAddressPrefix": "*",
               "access": "Deny",
-              "priority": 300,
+              "priority": 400,
               "direction": "Inbound"
             }
           }
