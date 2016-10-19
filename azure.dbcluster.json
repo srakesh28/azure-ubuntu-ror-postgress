@@ -241,8 +241,8 @@
 			"typeHandlerVersion": "2.0",
 			"autoUpgradeMinorVersion": true,
 			"settings": {
-			"fileUris": "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/shared_scripts/ubuntu/vm-disk-utils-0.1.sh",
-			"commandToExecute": "bash vm-disk-utils-0.1.sh -s"
+			"fileUris": "https://github.com/srakesh28/azure-ubuntu-ror-postgress/blob/master/install_postgresql.sh",
+			"commandToExecute": "bash install_postgresql.sh"
         }
 			
       }
