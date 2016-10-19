@@ -208,7 +208,7 @@
 			}
 		}, {
 			"type": "Microsoft.Compute/virtualMachines/extensions",
-			"name": "[concat(variables('vmname'), copyIndex(), '/scriptext')]",
+			"name": "[concat(variables('vmname'), copyindex(), '/install_postgresql')]",
 			"apiVersion": "[variables('vmApiVersion')]",
 			"location": "[parameters('location')]",
 			"dependsOn": [
