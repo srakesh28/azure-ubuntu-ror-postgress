@@ -1,0 +1,329 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "West US"
+    },
+    "baseaddress": {
+      "type": "string",
+      "defaultValue": "10.0.0.0/16"
+    },
+    "environmentPostfix": {
+      "type": "string",
+	  "defaultValue": "dev"
+
+    },
+    "nsgdiagstorageType": {
+      "type": "string",
+      "defaultValue": "Standard_LRS",
+      "allowedValues": [
+        "Standard_LRS",
+        "Standard_ZRS",
+        "Standard_GRS",
+        "Standard_RAGRS",
+        "Premium_LRS"
+      ]
+    }
+
+  },
+  "variables": {
+    "namingfix": "[toLower(substring(uniqueString(resourceGroup().id), 0, 5))]",
+    "vmApiVersion": "2016-03-30",
+    "networkApiVersion": "2016-03-30",
+
+    "baseIP": "[split(parameters('baseaddress'), '/')[0]]",
+    "ipValues": "[split(variables('baseIP'), '.')]",
+
+    "vnetfirst2": "[concat(variables('ipValues')[0], '.', variables('ipValues')[1], '.')]",
+    "dbsubnetFirst3": "[concat(variables('vnetfirst2'), add(int(variables('ipValues')[2]),1))]",
+    "authorwebsubnetFirst3": "[concat(variables('vnetfirst2'), add(int(variables('ipValues')[2]),2))]",
+    "jumpboxsubnetFirst3": "[concat(variables('vnetfirst2'), add(int(variables('ipValues')[2]),3))]",
+    "gatewaysubnetFirst3": "[concat(variables('vnetfirst2'), add(int(variables('ipValues')[2]),4))]",
+
+    "vnetSettings": {
+      "vnetName": "[concat('hmrorvnet', parameters('environmentPostfix'))]",
+      "addressPrefix": "[parameters('baseaddress')]",
+      "dbSubnet": {
+        "name": "subnetdb",
+        "prefix": "[concat( variables('dbsubnetFirst3'), '.0/24')]",
+
+        "nsgName": "nsgdbsubnet"
+      },
+      "authorwebSubnet": {
+        "name": "subnetdmz",
+        "prefix": "[concat( variables('authorwebsubnetFirst3'), '.0/24')]",
+        "nsgName": "nsgauthorwebsubnet"
+      },
+
+      "jumpboxSubnet": {
+        "name": "subnetmgmt",
+        "prefix": "[concat( variables('jumpboxsubnetFirst3'), '.0/24')]",
+        "nsgName": "nsgjumpboxsubnet"
+      },
+      "gatewaySubnet": {
+        "name": "GatewaySubnet",
+        "prefix": "[concat( variables('gatewaysubnetFirst3'), '.0/29')]",
+        "nsgName": "nsgGatewaySubnet"
+      }
+    },
+    "vpnclientipprefix": "11.0.199.0/24",
+
+    "nsgdiagstorageName": "[concat('nsgdiagstor', substring(uniqueString(resourceGroup().id),5))]"
+
+
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "[variables('vnetsettings').vnetName]",
+      "apiVersion": "[variables('networkApiVersion')]",
+      "location": "[parameters('location')]",
+      "tags": {
+        "displayName": "vnet"
+      },
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[ variables('vnetSettings').addressPrefix ]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[variables('vnetSettings').dbSubnet.name]",
+            "properties": {
+              "addressPrefix": "[variables('vnetSettings').dbSubnet.prefix]",
+              "networkSecurityGroup": {
+                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('vnetSettings').dbSubnet.nsgName)]"
+              }
+            }
+          },
+          {
+            "name": "[variables('vnetSettings').authorwebSubnet.name]",
+            "properties": {
+              "addressPrefix": "[variables('vnetSettings').authorwebSubnet.prefix]",
+              "networkSecurityGroup": {
+                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('vnetSettings').authorwebSubnet.nsgName)]"
+              }
+            }
+          },
+ 
+          {
+            "name": "[variables('vnetSettings').jumpboxSubnet.name]",
+            "properties": {
+              "addressPrefix": "[variables('vnetSettings').jumpboxSubnet.prefix]",
+              "networkSecurityGroup": {
+                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('vnetSettings').jumpboxSubnet.nsgName)]"
+              }
+            }
+          },
+          {
+            "name": "[variables('vnetSettings').gatewaySubnet.name]",
+            "properties": {
+              "addressPrefix": "[variables('vnetSettings').gatewaySubnet.prefix]"
+
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkSecurityGroups/', variables('vnetSettings').dbSubnet.nsgName)]",
+        "[concat('Microsoft.Network/networkSecurityGroups/', variables('vnetSettings').authorwebSubnet.nsgName)]",
+        "[concat('Microsoft.Network/networkSecurityGroups/', variables('vnetSettings').jumpboxSubnet.nsgName)]"
+
+      ]
+    },
+    {
+      "apiVersion": "[variables('networkapiversion')]",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "[variables('vnetSettings').dbSubnet.nsgName]",
+      "location": "[parameters('location')]",
+      "tags": {
+        "displayName": "dbnsg"
+      },
+      "properties": {
+        "securityRules": [
+          {
+            "name": "Allow_authorWeb",
+            "properties": {
+              "description": "Allow author web Subnet",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "5432",
+              "sourceAddressPrefix": "[variables('vnetSettings').authorwebSubnet.prefix]",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
+            }
+          },
+          
+          {
+            "name": "Allow_Jumpbox",
+            "properties": {
+              "description": "Allow render web Subnet",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "5432",
+              "sourceAddressPrefix": "[variables('vnetSettings').jumpboxSubnet.prefix]",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 210,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "Allowjumpboxssh",
+            "properties": {
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 300,
+              "direction": "Inbound"
+            }
+          },
+
+          {
+            "name": "denyotherssh",
+            "properties": {
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "destinationAddressPrefix": "*",
+              "access": "Deny",
+              "priority": 400,
+              "direction": "Inbound"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "[variables('networkapiversion')]",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "[variables('vnetSettings').authorwebSubnet.nsgName]",
+      "location": "[parameters('location')]",
+      "tags": {
+        "displayName": "webnsg"
+      },
+      "properties": {
+        "securityRules": [
+          {
+            "name": "Allowjumpboxssh",
+            "properties": {
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "[variables('vnetSettings').jumpboxSubnet.prefix]",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "WebAllow-443",
+            "properties": {
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "443",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 200,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "denyotherssh",
+            "properties": {
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "[variables('vpnclientipprefix')]",
+              "destinationAddressPrefix": "*",
+              "access": "Deny",
+              "priority": 300,
+              "direction": "Inbound"
+            }
+          }
+
+        ]
+      }
+    },
+ 
+    {
+      "apiVersion": "[variables('networkapiversion')]",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "[variables('vnetSettings').jumpboxSubnet.nsgName]",
+      "location": "[parameters('location')]",
+      "tags": {
+        "displayName": "jumpboxnsg"
+      },
+      "properties": {
+        "securityRules": [
+          {
+            "name": "sshallow",
+            "properties": {
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "[variables('nsgdiagstorageName')]",
+      "type": "Microsoft.Storage/storageAccounts",
+      "location": "[parameters('location')]",
+      "apiVersion": "2015-06-15",
+      "dependsOn": [ ],
+      "tags": {
+        "displayName": "nsgdiagstorage"
+      },
+      "properties": {
+        "accountType": "[parameters('nsgdiagstorageType')]"
+      }
+    }
+
+
+  ],
+  "outputs": {
+    "baseIP": {
+      "type": "string",
+      "value": "[variables('baseIP')]"
+    },
+    "vnetname": {
+      "type": "string",
+      "value": "[variables('vnetsettings').vnetName]"
+    },
+    "authorsubnetnsgname": {
+      "type": "string",
+      "value": "[variables('vnetSettings').authorwebSubnet.nsgName]"
+    },
+ 
+    "dbsubnetnsgname": {
+      "type": "string",
+      "value": "[variables('vnetSettings').dbSubnet.nsgName]"
+    },
+    "jumpboxsubnetnsgname": {
+      "type": "string",
+      "value": "[variables('vnetSettings').jumpboxSubnet.nsgName]"
+    },
+    "diagstorageaccountname": {
+      "type": "string",
+      "value": "[variables('nsgdiagstorageName')]"
+    }
+  }
+}
