@@ -4,7 +4,7 @@
 	"parameters": {
 		"location": {
 			"type": "string",
-			"defaultValue": "Central US"
+			"defaultValue": "westus"
 		},
 		"environmentPostfix": {
 			"type": "string"
