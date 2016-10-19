@@ -33,6 +33,10 @@ then
     exit 3
 fi
 
+
+wget https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/shared_scripts/ubuntu/vm-disk-utils-0.1.sh
+chmod a+x vm-disk-utils-0.1.sh
+
 #Format the data disk
 bash vm-disk-utils-0.1.sh -s
 
@@ -210,6 +214,6 @@ setup_datadisks
 
 service postgresql start
 
-configure_streaming_replication
+# configure_streaming_replication
 
 service postgresql start
