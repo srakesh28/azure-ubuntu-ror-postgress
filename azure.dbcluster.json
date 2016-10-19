@@ -1,418 +1,322 @@
 {
-  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
-  "contentVersion": "1.0.0.0",
-  "parameters": {
-    "location": {
-      "type": "string",
-      "defaultValue": "Central US"
-    },
-    "environmentPostfix": {
-      "type": "string"
-    },
-    "vnetname": {
-      "type": "string"
-    },
-    "subnetname": {
-      "type": "string"
-    },
-    "vaultName": {
-      "type": "string"
-    },
-    "vaultResourceGroup": {
-      "type": "string"
-    },
-    "numberOfDBVM": {
-      "type": "int",
-      "defaultValue": 3,
-      "maxValue": 5
-    },
-    "dbVMAdmin": {
-      "type": "string"
-    },
-    "dbsshKeyData": {
-      "type": "string",
-      "metadata": {
-        "description": "SSH rsa public key file as a string."
-      }
-    },
-    "scriptDBUriPath": {
-      "type": "string"
-    },
-    "scriptDBFile": {
-      "type": "string"
-    },
-    "scriptStorageResourceGroup": {
-      "type": "string"
-    },
-    "scriptStorageAccount": {
-      "type": "string",
-      "defaultValue": "dnccommonfilestorage"
-    },
-    "dbPassword": {
-      "type": "securestring"
-    },
-    "dbMaintPassword": {
-      "type": "securestring",
-      "metadata": {
-        "description": "Password for debian-sys-maint on all cluster DBs."
-      }
-    },
-    "dnccDb": {
-      "type": "string",
-      "metadata": {
-        "description": "WP Database Name."
-      }
-    },
-    "dnccUser": {
-      "type": "string",
-      "metadata": {
-        "description": "WP MySQL user name."
-      }
-    },
-    "dnccUserPass": {
-      "type": "securestring",
-      "metadata": {
-        "description": "WP MySQL user password."
-      }
-    },
-    "omsworkspaceId": {
-      "type": "string",
-      "metadata": {
-        "description": "workspace id"
-      }
-    },
-    "omsworkspaceKey": {
-      "type": "securestring",
-      "metadata": {
-        "description": "workspace key"
-      }
-    },
-    "ipaddressrange": {
-      "type": "string"
-    },
-    "dbcasecretUrlWithVersion": {
-      "type": "string"
-    },
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"location": {
+			"type": "string",
+			"defaultValue": "Central US"
+		},
+		"environmentPostfix": {
+			"type": "string"
+		},
+		"vnetname": {
+			"type": "string"
+		},
+		"subnetname": {
+			"type": "string"
+		},
 
-    "dbkeysecretUrlWithVersion": {
-      "type": "string"
-    },
+		"numberOfDBVM": {
+			"type": "int",
+			"defaultValue": 3,
+			"maxValue": 5
+		},
+		"dbVMAdmin": {
+			"type": "string"
+		},
+		"dbsshKeyData": {
+			"type": "string",
+			"metadata": {
+				"description": "SSH rsa public key file as a string."
+			}
+		},
+		"scriptDBUriPath": {
+			"type": "string"
+		},
+		"scriptDBFile": {
+			"type": "string"
+		},
 
-    "dbclientsecretUrlWithVersion": {
-      "type": "string"
-    },
-    "shareUrl": {
-      "type": "string"
-    },
-    "shareUser": {
-      "type": "string"
-    },
-    "sharePass": {
-      "type": "securestring"
-    }
-  },
-  "variables": {
-    "vmApiVersion": "2016-03-30",
-    "networkApiVersion": "2016-03-30",
-    "storageApiVersion": "2015-06-15",
-    "vnetID": "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetname'))]",
-    "dbsubnetRef": "[concat(variables('vnetID'),'/subnets/', parameters('subnetname'))]",
+		"dbPassword": {
+			"type": "securestring"
+		},
 
-    "baseIP": "[split(parameters('ipaddressrange'), '/')[0]]",
-    "ipValues": "[split(variables('baseIP'), '.')]",
-    "vnetfirst2": "[concat(variables('ipValues')[0], '.', variables('ipValues')[1], '.')]",
-    "subnetFirst3": "[concat(variables('vnetfirst2'), variables('ipValues')[2])]",
+		"dbMaintPassword": {
+			"type": "securestring",
+			"metadata": {
+				"description": "Password for cluster replciation"
+			}
+		},
 
-    "ip1": "[concat(variables('subnetFirst3'), '.', add(int(variables('ipValues')[3]), 4))]",
-    "ip2": "[concat(variables('subnetFirst3'), '.', add(int(variables('ipValues')[3]), 5))]",
-    "ip3": "[concat(variables('subnetFirst3'), '.', add(int(variables('ipValues')[3]), 6))]",
+		"ipaddressrange": {
+			"type": "string"
+		},
 
-    "addresses": [
-      "[variables('ip1')]",
-      "[variables('ip2')]",
-      "[variables('ip3')]"
-    ],
+		"shareUrl": {
+			"type": "string"
+		},
+		"shareUser": {
+			"type": "string"
+		},
+		"sharePass": {
+			"type": "securestring"
+		}
+	},
+	"variables": {
+		"vmApiVersion": "2016-03-30",
+		"networkApiVersion": "2016-03-30",
+		"storageApiVersion": "2015-06-15",
+		"vnetID": "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetname'))]",
+		"dbsubnetRef": "[concat(variables('vnetID'),'/subnets/', parameters('subnetname'))]",
 
-    "remoteNodeIPArray": [ "0.0.0.0", "1.1.1.1", "2.2.2.2" ],
-    "alladdresses": "[concat(variables('addresses'), variables('remoteNodeIPArray'))]",
+		"baseIP": "[split(parameters('ipaddressrange'), '/')[0]]",
+		"ipValues": "[split(variables('baseIP'), '.')]",
+		"vnetfirst2": "[concat(variables('ipValues')[0], '.', variables('ipValues')[1], '.')]",
+		"subnetFirst3": "[concat(variables('vnetfirst2'), variables('ipValues')[2])]",
 
-    "storageAccountType": "Premium_LRS",
-    "dbVmSize": "Standard_DS4_V2",
+		"ip1": "[concat(variables('subnetFirst3'), '.', add(int(variables('ipValues')[3]), 4))]",
+		"ip2": "[concat(variables('subnetFirst3'), '.', add(int(variables('ipValues')[3]), 5))]",
+		"ip3": "[concat(variables('subnetFirst3'), '.', add(int(variables('ipValues')[3]), 6))]",
 
-    "as_db": "[concat(variables('dbprefix'), 'as', parameters('environmentPostfix'))]",
+		"addresses": [
+			"[variables('ip1')]",
+			"[variables('ip2')]",
+			"[variables('ip3')]"
+		],
 
-    "dbprefix": "db",
-    "vmname": "[concat(variables('dbprefix'), 'vm', parameters('environmentPostfix'))]",
-    "dbStorageAccount": "[concat(substring(uniqueString(resourceGroup().id, variables('vmname')),5), variables('dbprefix'), 'sa')]",
-    "dbdiagnosticsStorageAccount": "[concat(substring(uniqueString(resourceGroup().id, variables('vmname')),5), variables('dbprefix'), 'diagsa')]",
-    "dbsshKeyPath": "[concat('/home/',parameters('dbVMAdmin'),'/.ssh/authorized_keys')]",
-    "scriptStorageAccountId": "[resourceId( parameters('scriptStorageResourceGroup'), 'Microsoft.Storage/storageAccounts', parameters('scriptStorageAccount'))]",
+		"remoteNodeIPArray": ["0.0.0.0", "1.1.1.1", "2.2.2.2"],
+		"alladdresses": "[concat(variables('addresses'), variables('remoteNodeIPArray'))]",
+
+		"storageAccountType": "Premium_LRS",
+		"dbVmSize": "Standard_DS2_V2",
+
+		"as_db": "[concat(variables('dbprefix'), 'as', parameters('environmentPostfix'))]",
+
+		"dbprefix": "db",
+		"vmname": "[concat(variables('dbprefix'), 'vm', parameters('environmentPostfix'))]",
+		"dbStorageAccount": "[concat(substring(uniqueString(resourceGroup().id, variables('vmname')),5), variables('dbprefix'), 'sa')]",
+		"dbdiagnosticsStorageAccount": "[concat(substring(uniqueString(resourceGroup().id, variables('vmname')),5), variables('dbprefix'), 'diagsa')]",
+		"dbsshKeyPath": "[concat('/home/',parameters('dbVMAdmin'),'/.ssh/authorized_keys')]",
 
 
-    "imageReferences": {
-      "db": {
-        "publisher": "Canonical",
-        "offer": "UbuntuServer",
-        "sku": "14.04.2-LTS",
-        "version": "latest"
-      }
-    }
-  },
-  "resources": [
-    {
-      "type": "Microsoft.Storage/storageAccounts",
-      "name": "[concat(variables('dbstorageaccount'), copyIndex())]",
-      "apiVersion": "[variables('storageApiVersion')]",
-      "location": "[parameters('location')]",
-      "tags": {
-        "displayName": "dbstorageaccounts"
-      },
-      "copy": {
-        "name": "dbStorageLoop",
-        "count": "[parameters('numberOfDBVM')]"
-      },
-      "properties": {
-        "accountType": "[variables('storageAccountType')]"
-      }
-    },
-    {
-      "type": "Microsoft.Storage/storageAccounts",
-      "name": "[variables('dbdiagnosticsStorageAccount')]",
-      "apiVersion": "[variables('storageApiVersion')]",
-      "location": "[parameters('location')]",
-      "tags": {
-        "displayName": "dbdiagnosticstorage"
-      },
-      "properties": {
-        "accountType": "Standard_LRS"
-      }
-    },
-    {
-      "type": "Microsoft.Compute/availabilitySets",
-      "name": "[variables('as_db')]",
-      "apiVersion": "[variables('vmApiVersion')]",
-      "location": "[parameters('location')]",
-      "properties": {
-        "platformUpdateDomainCount": 6,
-        "platformFaultDomainCount": 3
-      },
-      "tags": {
-        "displayName": "availabilityset_db"
-      },
-      "dependsOn": [ ]
-    },
-    {
-      "apiVersion": "[variables('vmApiVersion')]",
-      "type": "Microsoft.Compute/virtualMachines",
-      "name": "[concat(variables('vmname'), copyIndex())]",
-      "location": "[parameters('location')]",
-      "copy": {
-        "name": "dbvmLoop",
-        "count": "[parameters('numberOfDBVM')]"
-      },
-      "tags": {
-        "displayName": "dbvms"
-      },
-      "dependsOn": [
-        "dbStorageLoop",
-        "[resourceId('Microsoft.Compute/availabilitySets', variables('as_db'))]",
-        "[concat('Microsoft.Network/networkInterfaces/', variables('vmname'),'nic', copyindex())]"
-      ],
-      "properties": {
-        "availabilitySet": {
-          "id": "[resourceId('Microsoft.Compute/availabilitySets', variables('as_db'))]"
-        },
-        "hardwareProfile": {
-          "vmSize": "[variables('dbVmSize')]"
-        },
-        "osProfile": {
-          "computerName": "[concat(variables('vmname'),copyIndex())]",
-          "adminUsername": "[parameters('dbVMAdmin')]",
-          "linuxConfiguration": {
-            "disablePasswordAuthentication": true,
-            "ssh": {
-              "publicKeys": [
-                {
-                  "path": "[variables('dbsshKeyPath')]",
-                  "keyData": "[parameters('dbsshKeyData')]"
-                }
-              ]
-            }
-          },
-          "secrets": [
-            {
-              "sourceVault": {
-                "id": "[resourceId(parameters('vaultResourceGroup'), 'Microsoft.KeyVault/vaults', parameters('vaultName'))]"
-              },
-              "vaultCertificates": [
-                {
-                  "certificateUrl": "[parameters('dbcasecretUrlWithVersion')]"
-                },
-                {
-                  "certificateUrl": "[parameters('dbkeysecretUrlWithVersion')]"
-                },
-                {
-                  "certificateUrl": "[parameters('dbclientsecretUrlWithVersion')]"
-                }
-              ]
-            }
-          ]
-        },
-        "storageProfile": {
-          "imageReference": "[variables('imagereferences').db]",
-          "osDisk": {
-            "name": "dbosdisk",
-            "vhd": {
-              "uri": "[concat('http://',variables('dbStorageAccount'), copyIndex(),'.blob.core.windows.net/vhds/','dbosdisk', copyIndex(), '.vhd')]"
-            },
-            "caching": "ReadWrite",
-            "createOption": "FromImage"
-          }
-        },
-        "networkProfile": {
-          "networkInterfaces": [
-            {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('vmname'),'nic', copyindex()))]"
-            }
-          ]
-        }
-      }
-    },
-    {
-      "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(variables('vmname'), copyIndex(), '/scriptext')]",
-      "apiVersion": "[variables('vmApiVersion')]",
-      "location": "[parameters('location')]",
-      "dependsOn": [
-        "dbvmloop"
-      ],
-      "copy": {
-        "name": "dbscriptextensionLoop",
-        "count": "[parameters('numberOfDBVM')]"
-      },
-      "tags": {
-        "displayName": "dbvmsscriptext"
-      },
-      "properties": {
-        "publisher": "Microsoft.OSTCExtensions",
-        "type": "CustomScriptForLinux",
-        "typeHandlerVersion": "1.4",
-        "autoUpgradeMinorVersion": false,
-        "settings": {
-          "fileUris": [
-            "[concat(parameters('scriptdbUriPath'), '/', parameters('scriptDBFile'))]"
-          ],
-          "commandToExecute": "[concat( 'bash ', parameters('scriptDBFile'), ' ', parameters('dbpassword'), ' ', parameters('dnccDb'), ' ', parameters('dnccUser'), ' ',parameters('dnccUserPass'), ' ', copyindex(1), ' ', parameters('dbMaintPassword'), ' ', variables('addresses')[0], ' ', string(concat(take(variables('alladdresses'),copyIndex()), skip( variables('alladdresses'), add(copyIndex(),1)))), ' ', parameters('shareUrl'), ' ', parameters('shareUser'), ' ', parameters('sharePass'))]"
-        },
-        "protectedSettings": {
-          "storageAccountName": "[parameters('scriptStorageAccount')]",
-          "storageAccountKey": "[listkeys(variables('scriptStorageAccountId'), variables('storageApiVersion')).key1]",
-          "storageAccountEndPoint": "https://core.windows.net"
-        }
-      }
-    },
-    {
-      "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(variables('vmname'), copyIndex(), '/diagext')]",
-      "apiVersion": "[variables('vmApiVersion')]",
-      "location": "[parameters('location')]",
-      "dependsOn": [
-        "dbvmloop"
-      ],
-      "copy": {
-        "name": "dbvmdiagextensionLoop",
-        "count": "[parameters('numberOfDBVM')]"
-      },
-      "tags": {
-        "displayName": "dbvmsdiagext"
-      },
-      "properties": {
-        "publisher": "Microsoft.OSTCExtensions",
-        "type": "LinuxDiagnostic",
-        "typeHandlerVersion": "2.3",
-        "autoUpgradeMinorVersion": true,
-        "settings": {
-          "perfCfg": [
-            {
-              "query": "SELECT UsedMemory,AvailableMemory FROM SCX_MemoryStatisticalInformation",
-              "table": "Memory"
-            },
-            {
-              "query": "SELECT PercentProcessorTime FROM SCX_ProcessorStatisticalInformation",
-              "table": "_Total"
-            }
-          ]
-        },
-        "protectedSettings": {
-          "storageAccountName": "[variables('dbdiagnosticsStorageAccount')]",
-          "storageAccountKey": "[listkeys(variables('dbdiagnosticsStorageAccount'), variables('storageApiVersion')).key1]",
-          "storageAccountEndPoint": "https://core.windows.net"
-        }
-      }
-    },
-    {
-      "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(variables('vmname'), copyIndex(), '/Microsoft.EnterpriseCloud.Monitoring')]",
-      "apiVersion": "[variables('vmApiVersion')]",
-      "location": "[parameters('location')]",
-      "tags": {
-        "displayName": "omsdb"
-      },
-      "copy": {
-        "name": "dbomsextensionLoop",
-        "count": "[parameters('numberOfDBVM')]"
-      },
-      "dependsOn": [
-        "[concat(variables('vmname'), copyIndex())]"
-      ],
-      "properties": {
-        "publisher": "Microsoft.EnterpriseCloud.Monitoring",
-        "type": "OmsAgentForLinux",
-        "typeHandlerVersion": "1.0",
-        "autoUpgradeMinorVersion": true,
-        "settings": {
-          "workspaceId": "[parameters('omsworkspaceId')]"
-        },
-        "protectedSettings": {
-          "workspaceKey": "[parameters('omsworkspaceKey')]"
-        }
-      }
-    },
 
-    {
-      "apiVersion": "[variables('vmApiVersion')]",
-      "type": "Microsoft.Network/networkInterfaces",
-      "name": "[concat(variables('vmname'),'nic', copyindex())]",
-      "location": "[parameters('location')]",
-      "copy": {
-        "name": "dbnicLoop",
-        "count": "[parameters('numberOfDBVM')]"
-      },
-      "dependsOn": [
-      ],
-      "tags": {
-        "displayName": "DBNICs"
-      },
-      "properties": {
-        "ipConfigurations": [
-          {
-            "name": "ipconfigdb",
-            "properties": {
-              "privateIPAllocationMethod": "Static",
-              "privateIPAddress": "[variables('addresses')[copyIndex()]]",
-              "subnet": {
-                "id": "[variables('dbsubnetRef')]"
-              }
-            }
-          }
-        ]
-      }
-    }
-  ],
-  "outputs": {
-    "LBAddress": {
-      "type": "array",
-      "value": "[variables('addresses')]"
-    }
-  }
+		"imageReferences": {
+			"db": {
+				"publisher": "Canonical",
+				"offer": "UbuntuServer",
+				"sku": "14.04.2-LTS",
+				"version": "latest"
+			}
+		}
+	},
+	"resources": [{
+			"type": "Microsoft.Storage/storageAccounts",
+			"name": "[concat(variables('dbstorageaccount'), copyIndex())]",
+			"apiVersion": "[variables('storageApiVersion')]",
+			"location": "[parameters('location')]",
+			"tags": {
+				"displayName": "dbstorageaccounts"
+			},
+			"copy": {
+				"name": "dbStorageLoop",
+				"count": "[parameters('numberOfDBVM')]"
+			},
+			"properties": {
+				"accountType": "[variables('storageAccountType')]"
+			}
+		}, {
+			"type": "Microsoft.Storage/storageAccounts",
+			"name": "[variables('dbdiagnosticsStorageAccount')]",
+			"apiVersion": "[variables('storageApiVersion')]",
+			"location": "[parameters('location')]",
+			"tags": {
+				"displayName": "dbdiagnosticstorage"
+			},
+			"properties": {
+				"accountType": "Standard_LRS"
+			}
+		}, {
+			"type": "Microsoft.Compute/availabilitySets",
+			"name": "[variables('as_db')]",
+			"apiVersion": "[variables('vmApiVersion')]",
+			"location": "[parameters('location')]",
+			"properties": {
+				"platformUpdateDomainCount": 6,
+				"platformFaultDomainCount": 3
+			},
+			"tags": {
+				"displayName": "availabilityset_db"
+			},
+			"dependsOn": []
+		}, {
+			"apiVersion": "[variables('vmApiVersion')]",
+			"type": "Microsoft.Compute/virtualMachines",
+			"name": "[concat(variables('vmname'), copyIndex())]",
+			"location": "[parameters('location')]",
+			"copy": {
+				"name": "dbvmLoop",
+				"count": "[parameters('numberOfDBVM')]"
+			},
+			"tags": {
+				"displayName": "dbvms"
+			},
+			"dependsOn": [
+				"dbStorageLoop",
+				"[resourceId('Microsoft.Compute/availabilitySets', variables('as_db'))]",
+				"[concat('Microsoft.Network/networkInterfaces/', variables('vmname'),'nic', copyindex())]"
+			],
+			"properties": {
+				"availabilitySet": {
+					"id": "[resourceId('Microsoft.Compute/availabilitySets', variables('as_db'))]"
+				},
+				"hardwareProfile": {
+					"vmSize": "[variables('dbVmSize')]"
+				},
+				"osProfile": {
+					"computerName": "[concat(variables('vmname'),copyIndex())]",
+					"adminUsername": "[parameters('dbVMAdmin')]",
+					"linuxConfiguration": {
+						"disablePasswordAuthentication": true,
+						"ssh": {
+							"publicKeys": [{
+								"path": "[variables('dbsshKeyPath')]",
+								"keyData": "[parameters('dbsshKeyData')]"
+							}]
+						}
+					}
+
+				},
+				"storageProfile": {
+					"imageReference": "[variables('imagereferences').db]",
+					"osDisk": {
+						"name": "dbosdisk",
+						"vhd": {
+							"uri": "[concat('http://',variables('dbStorageAccount'), copyIndex(),'.blob.core.windows.net/vhds/','dbosdisk', copyIndex(), '.vhd')]"
+						},
+						"caching": "ReadWrite",
+						"createOption": "FromImage"
+					},
+
+					"dataDisks": [{
+							"name": "datadisk1",
+							"diskSizeGB": "128",
+							"lun": 0,
+							"vhd": {
+								"uri": "[concat('http://',variables('dbStorageAccount'), copyIndex(),'.blob.core.windows.net/vhds/',variables('vmname'), copyIndex(), '-datadisk1.vhd')]"
+							},
+							"caching": "None",
+							"createOption": "Empty"
+						}
+
+					]
+
+				},
+
+
+
+				"networkProfile": {
+					"networkInterfaces": [{
+						"id": "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('vmname'),'nic', copyindex()))]"
+					}]
+				}
+			}
+		}, {
+			"type": "Microsoft.Compute/virtualMachines/extensions",
+			"name": "[concat(variables('vmname'), copyIndex(), '/scriptext')]",
+			"apiVersion": "[variables('vmApiVersion')]",
+			"location": "[parameters('location')]",
+			"dependsOn": [
+				"dbvmloop"
+			],
+			"copy": {
+				"name": "dbscriptextensionLoop",
+				"count": "[parameters('numberOfDBVM')]"
+			},
+			"tags": {
+				"displayName": "dbvmsscriptext"
+			},
+			"properties": {
+				"publisher": "Microsoft.OSTCExtensions",
+				"type": "CustomScriptForLinux",
+				"typeHandlerVersion": "1.4",
+				"autoUpgradeMinorVersion": false,
+				"settings": {
+					"fileUris": [
+						"[concat(parameters('scriptdbUriPath'), '/', parameters('scriptDBFile'))]"
+					],
+					"commandToExecute": "[concat( 'bash ', parameters('scriptDBFile')]"
+				}
+
+			}
+		}, {
+			"type": "Microsoft.Compute/virtualMachines/extensions",
+			"name": "[concat(variables('vmname'), copyIndex(), '/diagext')]",
+			"apiVersion": "[variables('vmApiVersion')]",
+			"location": "[parameters('location')]",
+			"dependsOn": [
+				"dbvmloop"
+			],
+			"copy": {
+				"name": "dbvmdiagextensionLoop",
+				"count": "[parameters('numberOfDBVM')]"
+			},
+			"tags": {
+				"displayName": "dbvmsdiagext"
+			},
+			"properties": {
+				"publisher": "Microsoft.OSTCExtensions",
+				"type": "LinuxDiagnostic",
+				"typeHandlerVersion": "2.3",
+				"autoUpgradeMinorVersion": true,
+				"settings": {
+					"perfCfg": [{
+						"query": "SELECT UsedMemory,AvailableMemory FROM SCX_MemoryStatisticalInformation",
+						"table": "Memory"
+					}, {
+						"query": "SELECT PercentProcessorTime FROM SCX_ProcessorStatisticalInformation",
+						"table": "_Total"
+					}]
+				},
+				"protectedSettings": {
+					"storageAccountName": "[variables('dbdiagnosticsStorageAccount')]",
+					"storageAccountKey": "[listkeys(variables('dbdiagnosticsStorageAccount'), variables('storageApiVersion')).key1]",
+					"storageAccountEndPoint": "https://core.windows.net"
+				}
+			}
+		},
+
+
+		{
+			"apiVersion": "[variables('vmApiVersion')]",
+			"type": "Microsoft.Network/networkInterfaces",
+			"name": "[concat(variables('vmname'),'nic', copyindex())]",
+			"location": "[parameters('location')]",
+			"copy": {
+				"name": "dbnicLoop",
+				"count": "[parameters('numberOfDBVM')]"
+			},
+			"dependsOn": [],
+			"tags": {
+				"displayName": "DBNICs"
+			},
+			"properties": {
+				"ipConfigurations": [{
+					"name": "ipconfigdb",
+					"properties": {
+						"privateIPAllocationMethod": "Static",
+						"privateIPAddress": "[variables('addresses')[copyIndex()]]",
+						"subnet": {
+							"id": "[variables('dbsubnetRef')]"
+						}
+					}
+				}]
+			}
+		}
+	],
+	"outputs": {
+		"LBAddress": {
+			"type": "array",
+			"value": "[variables('addresses')]"
+		}
+	}
 }
