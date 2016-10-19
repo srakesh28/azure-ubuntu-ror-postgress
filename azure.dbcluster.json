@@ -198,7 +198,7 @@
 					{
 							"name": "datadisk2",
 							"diskSizeGB": "128",
-							"lun": 0,
+							"lun": 1,
 							"vhd": {
 								"uri": "[concat('http://',variables('dbStorageAccount'), copyIndex(),'.blob.core.windows.net/vhds/',variables('vmname'), copyIndex(), '-datadisk2.vhd')]"
 							},
