@@ -208,7 +208,34 @@
 			}
 		}, 
 		
-
+	{
+			"type": "Microsoft.Compute/virtualMachines/extensions",
+			"name": "[concat(variables('vmname'), copyIndex(), '/install_postgresql')]",
+			"apiVersion": "[variables('vmApiVersion')]",
+			"location": "[parameters('location')]",
+			"dependsOn": [
+				"dbvmloop"
+			],
+			"copy": {
+				"name": "scriptCopyLoop",
+				"count": "[parameters('numberOfDBVM')]"
+			},
+			"tags": {
+				"displayName": "dbvmscript"
+			},
+			"properties": {
+			"publisher": "Microsoft.Azure.Extensions",
+			"type": "CustomScript",
+			"typeHandlerVersion": "2.0",
+			"autoUpgradeMinorVersion": true,
+			"settings": {
+			"fileUris": "https://raw.githubusercontent.com/srakesh28/azure-ubuntu-ror-postgress/master/install_postgresql.sh"
+        },
+			"protectedSettings": {
+			"commandToExecute": "[concat('bash install_postgresql.sh]"
+        }
+      }
+    },
 		
 		{
 			"type": "Microsoft.Compute/virtualMachines/extensions",
