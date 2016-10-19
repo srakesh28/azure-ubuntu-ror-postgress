@@ -8,7 +8,7 @@
     },
     "baseaddress": {
       "type": "string",
-      "defaultValue": "10.0.0.0/16"
+      "defaultValue": "11.0.0.0/16"
     },
     "environmentPostfix": {
       "type": "string",
@@ -37,30 +37,30 @@
     "ipValues": "[split(variables('baseIP'), '.')]",
 
     "vnetfirst2": "[concat(variables('ipValues')[0], '.', variables('ipValues')[1], '.')]",
-    "dbsubnetFirst3": "[concat(variables('vnetfirst2'), add(int(variables('ipValues')[2]),1))]",
-    "authorwebsubnetFirst3": "[concat(variables('vnetfirst2'), add(int(variables('ipValues')[2]),2))]",
-    "jumpboxsubnetFirst3": "[concat(variables('vnetfirst2'), add(int(variables('ipValues')[2]),3))]",
+    "jumpboxsubnetFirst3": "[concat(variables('vnetfirst2'), add(int(variables('ipValues')[2]),1))]",
+	"authorwebsubnetFirst3": "[concat(variables('vnetfirst2'), add(int(variables('ipValues')[2]),2))]",
+	"dbsubnetFirst3": "[concat(variables('vnetfirst2'), add(int(variables('ipValues')[2]),3))]",     
     "gatewaysubnetFirst3": "[concat(variables('vnetfirst2'), add(int(variables('ipValues')[2]),4))]",
 
     "vnetSettings": {
       "vnetName": "[concat('hmrorvnet', parameters('environmentPostfix'))]",
       "addressPrefix": "[parameters('baseaddress')]",
       "dbSubnet": {
-        "name": "subnetdb",
+        "name": "dbsubnet",
         "prefix": "[concat( variables('dbsubnetFirst3'), '.0/24')]",
 
         "nsgName": "nsgdbsubnet"
       },
       "authorwebSubnet": {
-        "name": "subnetdmz",
+        "name": "dmzsubnet",
         "prefix": "[concat( variables('authorwebsubnetFirst3'), '.0/24')]",
-        "nsgName": "nsgauthorwebsubnet"
+        "nsgName": "nsgdmzsubnet"
       },
 
       "jumpboxSubnet": {
-        "name": "subnetmgmt",
+        "name": "mgmtsubnet",
         "prefix": "[concat( variables('jumpboxsubnetFirst3'), '.0/24')]",
-        "nsgName": "nsgjumpboxsubnet"
+        "nsgName": "nsgmgmtsubnet"
       },
       "gatewaySubnet": {
         "name": "GatewaySubnet",
@@ -145,9 +145,9 @@
       "properties": {
         "securityRules": [
           {
-            "name": "Allow_authorWeb",
+            "name": "Allow_DMZ",
             "properties": {
-              "description": "Allow author web Subnet",
+              "description": "Allow DMZ Subnet",
               "protocol": "Tcp",
               "sourcePortRange": "*",
               "destinationPortRange": "5432",
@@ -160,9 +160,9 @@
           },
           
           {
-            "name": "Allow_Jumpbox",
+            "name": "Allow_MGMT",
             "properties": {
-              "description": "Allow render web Subnet",
+              "description": "Allow MGMT Subnet",
               "protocol": "Tcp",
               "sourcePortRange": "*",
               "destinationPortRange": "5432",
@@ -209,12 +209,12 @@
       "name": "[variables('vnetSettings').authorwebSubnet.nsgName]",
       "location": "[parameters('location')]",
       "tags": {
-        "displayName": "webnsg"
+        "displayName": "dmznsg"
       },
       "properties": {
         "securityRules": [
           {
-            "name": "Allowjumpboxssh",
+            "name": "AllowMGMTssh",
             "properties": {
               "protocol": "Tcp",
               "sourcePortRange": "*",
@@ -263,7 +263,7 @@
       "name": "[variables('vnetSettings').jumpboxSubnet.nsgName]",
       "location": "[parameters('location')]",
       "tags": {
-        "displayName": "jumpboxnsg"
+        "displayName": "mgmtnsg"
       },
       "properties": {
         "securityRules": [
