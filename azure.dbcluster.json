@@ -63,7 +63,8 @@
 		"ip1": "[concat(variables('subnetFirst3'), '.', add(int(variables('ipValues')[3]), 4))]",
 		"ip2": "[concat(variables('subnetFirst3'), '.', add(int(variables('ipValues')[3]), 5))]",
 		"ip3": "[concat(variables('subnetFirst3'), '.', add(int(variables('ipValues')[3]), 6))]",
-
+		"fileUris": "https://raw.githubusercontent.com/srakesh28/azure-ubuntu-ror-postgress/master/install_postgresql.sh",
+		"commandToExecute": "bash install_postgresql.sh",
 		"addresses": [
 			"[variables('ip1')]",
 			"[variables('ip2')]",
@@ -187,7 +188,7 @@
 					{
 							"name": "datadisk1",
 							"diskSizeGB": "128",
-							"lun": 0,
+							"lun": 1,
 							"vhd": {
 								"uri": "[concat('http://',variables('dbStorageAccount'), copyIndex(),'.blob.core.windows.net/vhds/',variables('vmname'), copyIndex(), '-datadisk1.vhd')]"
 							},
@@ -198,7 +199,7 @@
 					{
 							"name": "datadisk2",
 							"diskSizeGB": "128",
-							"lun": 1,
+							"lun": 0,
 							"vhd": {
 								"uri": "[concat('http://',variables('dbStorageAccount'), copyIndex(),'.blob.core.windows.net/vhds/',variables('vmname'), copyIndex(), '-datadisk2.vhd')]"
 							},
@@ -226,12 +227,8 @@
 			"apiVersion": "[variables('vmApiVersion')]",
 			"location": "[parameters('location')]",
 			"dependsOn": [
-				"dbvmloop"
+				"[concat('Microsoft.Compute/virtualMachines/', variables('vmname'),copyindex(1))]"
 			],
-			"copy": {
-				"name": "scriptCopyLoop",
-				"count": "[parameters('numberOfDBVM')]"
-			},
 			"tags": {
 				"displayName": "dbvmscript"
 			},
@@ -241,8 +238,8 @@
 			"typeHandlerVersion": "2.0",
 			"autoUpgradeMinorVersion": true,
 			"settings": {
-			"fileUris": "https://raw.githubusercontent.com/srakesh28/azure-ubuntu-ror-postgress/master/install_postgresql.sh",
-			"commandToExecute": "sudo bash install_postgresql.sh"
+			"fileUris": "[split(variables('fileUris'), ' ')]",
+			"commandToExecute": "[variables('commandToExecute')]"
         }
 			
       }
