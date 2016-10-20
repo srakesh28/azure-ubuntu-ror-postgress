@@ -69,7 +69,7 @@
 		"ip2": "[concat(variables('subnetFirst3'), '.', add(int(variables('ipValues')[3]), 5))]",
 		"ip3": "[concat(variables('subnetFirst3'), '.', add(int(variables('ipValues')[3]), 6))]",
 		"fileUris": "https://raw.githubusercontent.com/srakesh28/azure-ubuntu-ror-postgress/master/install_postgresql.sh",
-		"commandToExecute": "bash install_postgresql.sh",
+		"commandToExecute": "sh install_postgresql.sh",
 		"addresses": [
 			"[variables('ip1')]",
 			"[variables('ip2')]",
@@ -247,8 +247,11 @@
 				"typeHandlerVersion": "2.0",
 				"autoUpgradeMinorVersion": true,
 				"settings": {
-					"fileUris": "https://raw.githubusercontent.com/srakesh28/azure-ubuntu-ror-postgress/master/install_postgresql.sh",
+					"fileUris": [
+					"https://raw.githubusercontent.com/srakesh28/azure-ubuntu-ror-postgress/master/install_postgresql.sh"
+					],
 					"commandToExecute": "sh install_postgresql.sh"
+					
 				}
 
 			}
