@@ -227,8 +227,13 @@
 			"apiVersion": "[variables('vmApiVersion')]",
 			"location": "[parameters('location')]",
 			"dependsOn": [
-				"[concat('Microsoft.Compute/virtualMachines/', variables('vmname'),copyindex(1))]"
+				"dbvmloop"
+				
 			],
+			"copy": {
+				"name": "scriptCopyLoop",
+				"count": "[parameters('numberOfDBVM')]"
+			},
 			"tags": {
 				"displayName": "dbvmscript"
 			},
@@ -238,13 +243,12 @@
 			"typeHandlerVersion": "2.0",
 			"autoUpgradeMinorVersion": true,
 			"settings": {
-			"fileUris": "[split(variables('fileUris'), ' ')]",
-			"commandToExecute": "[variables('commandToExecute')]"
+			"fileUris": "https://raw.githubusercontent.com/srakesh28/azure-ubuntu-ror-postgress/master/install_postgresql.sh",
+			"commandToExecute": "bash install_postgresql.sh"
         }
 			
       }
     },
-		
 		{
 			"type": "Microsoft.Compute/virtualMachines/extensions",
 			"name": "[concat(variables('vmname'), copyIndex(), '/diagext')]",
