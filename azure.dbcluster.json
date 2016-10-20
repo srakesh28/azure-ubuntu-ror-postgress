@@ -244,11 +244,12 @@
 			"autoUpgradeMinorVersion": true,
 			"settings": {
 			"fileUris": "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/shared_scripts/ubuntu/vm-disk-utils-0.1.sh",
-			"commandToExecute": "bash vm-disk-utils-0.1.sh"
+			"commandToExecute": "sh vm-disk-utils-0.1.sh"
         }
 			
       }
     },
+		
 		{
 			"type": "Microsoft.Compute/virtualMachines/extensions",
 			"name": "[concat(variables('vmname'), copyIndex(), '/diagext')]",
