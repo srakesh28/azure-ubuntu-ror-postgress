@@ -7,15 +7,15 @@
 			"defaultValue": "westus"
 		},
 		"environmentPostfix": {
-			"type": "string"
+			"type": "string",
 			"defaultValue": "qa"
 		},
 		"vnetname": {
-			"type": "string"
+			"type": "string",
 			"defaultValue": "hmrorvnetdev"
 		},
 		"subnetname": {
-			"type": "string"
+			"type": "string",
 			"defaultValue": "dbsubnet"
 		},
 
@@ -30,8 +30,8 @@
 		"dbsshKeyData": {
 			"type": "string",
 			"metadata": {
-				"description": "SSH rsa public key file as a string."
-			"defaultValue": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDWOYSdnmPwFj8Fo8P36ENdkOXQ6v+8gMgdEHlfp7tUALkwy/XyhzVxbz+h9hyS29ceA4z0PKqL6adXId83vP72d2kGVhX8cmJNnQAMByvnbL8whSJbbWoVN2KWXhWq6MO1SU/ntDxSUMa0vOAkmrk8kJqvmr34bbE3GpdXylIYIF8i7bDyxLiqmvbFl0alNNm8S7v2EKYx7p4V8gbz6kq9jUrFSU5/o/I8BXreY1zcnS17nmNf4jKBO4jWbnvxFCUbJ4MAErjYjXo8XzWM2UzPWvXJoCBOYMauXX1rlHuhKYLTyT1hWo6KMr18XvpuHcay3gNfeRspfDoee17lX3nT imported-openssh-key"
+				"description": "SSH rsa public key file as a string.",
+				"defaultValue": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDWOYSdnmPwFj8Fo8P36ENdkOXQ6v+8gMgdEHlfp7tUALkwy/XyhzVxbz+h9hyS29ceA4z0PKqL6adXId83vP72d2kGVhX8cmJNnQAMByvnbL8whSJbbWoVN2KWXhWq6MO1SU/ntDxSUMa0vOAkmrk8kJqvmr34bbE3GpdXylIYIF8i7bDyxLiqmvbFl0alNNm8S7v2EKYx7p4V8gbz6kq9jUrFSU5/o/I8BXreY1zcnS17nmNf4jKBO4jWbnvxFCUbJ4MAErjYjXo8XzWM2UzPWvXJoCBOYMauXX1rlHuhKYLTyT1hWo6KMr18XvpuHcay3gNfeRspfDoee17lX3nT imported-openssh-key"
 			}
 		},
 
@@ -47,7 +47,7 @@
 		},
 
 		"ipaddressrange": {
-			"type": "string"
+			"type": "string",
 			"defaultValue": "11.0.3.0/24"
 		}
 
@@ -189,8 +189,7 @@
 						"createOption": "FromImage"
 					},
 
-					"dataDisks": [
-					{
+					"dataDisks": [{
 							"name": "datadisk1",
 							"diskSizeGB": "128",
 							"lun": 1,
@@ -200,8 +199,8 @@
 							"caching": "None",
 							"createOption": "Empty"
 						},
-						
-					{
+
+						{
 							"name": "datadisk2",
 							"diskSizeGB": "128",
 							"lun": 0,
@@ -210,7 +209,7 @@
 							},
 							"caching": "None",
 							"createOption": "Empty"
-						}	
+						}
 
 					]
 
@@ -224,16 +223,16 @@
 					}]
 				}
 			}
-		}, 
-		
-	{
+		},
+
+		{
 			"type": "Microsoft.Compute/virtualMachines/extensions",
 			"name": "[concat(variables('vmname'), copyIndex(), '/install_postgresql')]",
 			"apiVersion": "[variables('vmApiVersion')]",
 			"location": "[parameters('location')]",
 			"dependsOn": [
 				"dbvmloop"
-				
+
 			],
 			"copy": {
 				"name": "scriptCopyLoop",
@@ -243,18 +242,18 @@
 				"displayName": "dbvmscript"
 			},
 			"properties": {
-			"publisher": "Microsoft.Azure.Extensions",
-			"type": "CustomScript",
-			"typeHandlerVersion": "2.0",
-			"autoUpgradeMinorVersion": true,
-			"settings": {
-			"fileUris": "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/shared_scripts/ubuntu/vm-disk-utils-0.1.sh",
-			"commandToExecute": "sh vm-disk-utils-0.1.sh"
-        }
-			
-      }
-    },
-		
+				"publisher": "Microsoft.Azure.Extensions",
+				"type": "CustomScript",
+				"typeHandlerVersion": "2.0",
+				"autoUpgradeMinorVersion": true,
+				"settings": {
+					"fileUris": "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/shared_scripts/ubuntu/vm-disk-utils-0.1.sh",
+					"commandToExecute": "sh vm-disk-utils-0.1.sh"
+				}
+
+			}
+		},
+
 		{
 			"type": "Microsoft.Compute/virtualMachines/extensions",
 			"name": "[concat(variables('vmname'), copyIndex(), '/diagext')]",
