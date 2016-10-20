@@ -208,12 +208,12 @@ configure_streaming_replication() {
 }
 
 # MAIN ROUTINE
-install_postgresql_service
+#install_postgresql_service
 
 setup_datadisks
 
-service postgresql start
+#service postgresql start
 
 #configure_streaming_replication
 
-service postgresql start
+#service postgresql start
