@@ -45,3 +45,12 @@ Azure CLI: azure group deployment create --template-uri https://raw.githubuserco
 <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsrakesh28%2Fazure-ubuntu-ror-postgress%2Fmaster%2Fazure.sidekiqcluster.json" target="_blank">
 <img src="http://azuredeploy.net/deploybutton.png"/>
 </a>
+
+
+Deploy vsftp VMs: azure.vsftpcluster.json - Deploys vsfto Bitnami Node.js servers in DMZ Subnet and runs empty_scriot.sh on each vm
+
+Azure CLI: azure group deployment create --template-uri https://raw.githubusercontent.com/srakesh28/azure-ubuntu-ror-postgress/master/azure.vsftpcluster.json demo1
+
+<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsrakesh28%2Fazure-ubuntu-ror-postgress%2Fmaster%2Fazure.vsftpcluster.json" target="_blank">
+<img src="http://azuredeploy.net/deploybutton.png"/>
+</a>
