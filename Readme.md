@@ -1,5 +1,6 @@
 #	azure.network.json – sets up the network and NSGs between the subnets.
-#	azure.dbcluster.json – Postgress master/slave cluster. Runs install_postgresql.sh on each VM using custom script extension to install postgress and configure replication.
+#	azure.dbcluster.json – Deploys Postgress master/slave cluster in DB Subnet,  Runs install_postgresql.sh on each VM using custom script extension to install postgress and configure replication.
+#	azure.webcluster.json – Deploys ROR Web VMS in DMZ Subnet and  Runs install_ror.sh on each VM using custom script extension to install Ruby on Rails 
 
 Scripts need to be uploaded to github or Azure Blob Storage or another publicly accessible site.
 
