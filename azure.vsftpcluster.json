@@ -31,7 +31,7 @@
 			"type": "string",
 			"metadata": {
 				"description": "SSH rsa public key file as a string."
-				
+
 			}
 		},
 
@@ -129,8 +129,8 @@
 				"displayName": "availabilityset_vftp"
 			},
 			"dependsOn": []
-		}, 
-		
+		},
+
 		{
 			"type": "Microsoft.Compute/virtualMachines",
 			"name": "[concat(variables('vmname'), copyIndex())]",
@@ -148,12 +148,7 @@
 				"[resourceId('Microsoft.Compute/availabilitySets', variables('as_vftp'))]",
 				"[concat('Microsoft.Network/networkInterfaces/', variables('vmname'),'nic', copyindex())]"
 			],
-			
-			"plan": {
-			"name": "4.3",
-			"publisher": "bitnami",
-			"product": "nodejs"
-},
+
 
 			"properties": {
 				"availabilitySet": {
@@ -178,10 +173,6 @@
 				},
 				"storageProfile": {
 					"imageReference": "[variables('imagereferences').vftp]",
-					"publisher": "bitnami",
-					"offer": "nodejs",
-					"sku": "4.3",
-					"version": "latest",
 					"osDisk": {
 						"name": "vftposdisk",
 						"vhd": {
@@ -201,7 +192,14 @@
 						"id": "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('vmname'),'nic', copyindex()))]"
 					}]
 				}
+			},
+
+			"plan": {
+				"name": "4-3",
+				"publisher": "bitnami",
+				"product": "nodejs"
 			}
+
 		},
 
 		{
