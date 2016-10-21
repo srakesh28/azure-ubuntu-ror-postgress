@@ -69,7 +69,7 @@
 		"alladdresses": "[concat(variables('addresses'), variables('remoteNodeIPArray'))]",
 
 		"storageAccountType": "Standard_LRS",
-		"vftpVmSize": "Standard_D2_V2",
+		"vftpVmSize": "Standard_D1_V2",
 
 		"as_vftp": "[concat(variables('vftpprefix'), 'as', parameters('environmentPostfix'))]",
 
