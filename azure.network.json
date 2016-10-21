@@ -12,7 +12,7 @@
     },
     "environmentPostfix": {
       "type": "string",
-	  "defaultValue": "dev"
+	  "defaultValue": "qa"
 
     },
     "nsgdiagstorageType": {
