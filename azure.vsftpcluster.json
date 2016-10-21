@@ -83,7 +83,7 @@
 
 		"imageReferences": {
 			"vftp": {
-				"publisher": "bitnnami",
+				"publisher": "bitnami",
 				"offer": "nodejs",
 				"sku": "4-3",
 				"version": "latest"
