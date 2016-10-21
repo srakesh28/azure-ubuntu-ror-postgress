@@ -12,6 +12,12 @@ Scripts need to be uploaded to github or Azure Blob Storage or another publicly 
 # Deploy DB VMs etc
 <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsrakesh28%2Fazure-ubuntu-ror-postgress%2Fmaster%2Fazure.dbcluster.json" target="_blank">
     <img src="http://azuredeploy.net/deploybutton.png"/>
+    
+    
+# Deploy Web Tier ROR VMs etc
+<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsrakesh28%2Fazure-ubuntu-ror-postgress%2Fmaster%2Fazure.webcluster.json" target="_blank">
+    <img src="http://azuredeploy.net/deploybutton.png"/>
+      
       
 
 </a>
