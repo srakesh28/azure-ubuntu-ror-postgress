@@ -69,7 +69,7 @@
 		"alladdresses": "[concat(variables('addresses'), variables('remoteNodeIPArray'))]",
 
 		"storageAccountType": "Standard_LRS",
-		"webVmSize": "Standard_DS2_V2",
+		"webVmSize": "Standard_D2_V2",
 
 		"as_web": "[concat(variables('webprefix'), 'as', parameters('environmentPostfix'))]",
 
@@ -178,7 +178,6 @@
 						"createOption": "FromImage"
 					}
 
-					
 
 				},
 
@@ -215,10 +214,10 @@
 				"autoUpgradeMinorVersion": true,
 				"settings": {
 					"fileUris": [
-					"https://raw.githubusercontent.com/srakesh28/azure-ubuntu-ror-postgress/master/install_ruby.sh"
+						"https://raw.githubusercontent.com/srakesh28/azure-ubuntu-ror-postgress/master/install_ruby.sh"
 					],
 					"commandToExecute": "sh install_ruby.sh"
-					
+
 				}
 
 			}
