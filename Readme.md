@@ -18,7 +18,7 @@ Azure CLI azure group deployment create --template-uri https://raw.githubusercon
 
 <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsrakesh28%2Fazure-ubuntu-ror-postgress%2Fmaster%2Fazure.jumpcluster.json" target="_blank">
     <img src="http://azuredeploy.net/deploybutton.png"/>
-
+</a>
 
 Deploy DB VMs : azure.dbcluster.json – Deploys Postgress master/slave cluster in DB Subnet,  Runs install_postgresql.sh on each VM using custom script extension to install postgress and configure replication.
 
@@ -26,7 +26,7 @@ Azure CLI : azure group deployment create --template-uri https://raw.githubuserc
 
 <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsrakesh28%2Fazure-ubuntu-ror-postgress%2Fmaster%2Fazure.dbcluster.json" target="_blank">
     <img src="http://azuredeploy.net/deploybutton.png"/>
-
+</a>
 
 Deploy Web Tier ROR VMs: azure.webcluster.json – Deploys ROR Web VMS in DMZ Subnet and  Runs install_ror.sh on each VM using custom script extension to install Ruby on Rails
 
@@ -35,13 +35,11 @@ Azure CLI : azure group deployment create --template-uri https://raw.githubuserc
 
 <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsrakesh28%2Fazure-ubuntu-ror-postgress%2Fmaster%2Fazure.webcluster.json" target="_blank">
 <img src="http://azuredeploy.net/deploybutton.png"/>
-
+</a>
 Deploy Sidekiq VMs: azure.sidekiqcluster.json - Deploys Sideq servers in DMZ Subnet and runs install_sidekiq.sh on each vm
 
 Azure CLI: azure group deployment create --template-uri https://raw.githubusercontent.com/srakesh28/azure-ubuntu-ror-postgress/master/azure.sidekiqcluster.json demo1
 
 <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsrakesh28%2Fazure-ubuntu-ror-postgress%2Fmaster%2Fazure.sidekiqcluster.json" target="_blank">
-
-    <img src="http://azuredeploy.net/deploybutton.png"/>
-
+<img src="http://azuredeploy.net/deploybutton.png"/>
 </a>
