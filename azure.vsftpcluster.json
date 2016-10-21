@@ -150,7 +150,7 @@
 			],
 			
 			"plan": {
-			"name": "4-3",
+			"name": "nodejs",
 			"publisher": "bitnami",
 			"product": "nodejs"
 },
@@ -178,6 +178,10 @@
 				},
 				"storageProfile": {
 					"imageReference": "[variables('imagereferences').vftp]",
+					"publisher": "bitnami",
+					"offer": "nodejs",
+					"sku": "4.3",
+					"version": "latest",
 					"osDisk": {
 						"name": "vftposdisk",
 						"vhd": {
