@@ -150,7 +150,7 @@
 			],
 			
 			"plan": {
-			"name": "nodejs",
+			"name": "4.3",
 			"publisher": "bitnami",
 			"product": "nodejs"
 },
