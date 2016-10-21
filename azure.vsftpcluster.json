@@ -129,11 +129,13 @@
 				"displayName": "availabilityset_vftp"
 			},
 			"dependsOn": []
-		}, {
-			"apiVersion": "[variables('vmApiVersion')]",
+		}, 
+		
+		{
 			"type": "Microsoft.Compute/virtualMachines",
 			"name": "[concat(variables('vmname'), copyIndex())]",
 			"location": "[parameters('location')]",
+			"apiVersion": "[variables('vmApiVersion')]",
 			"copy": {
 				"name": "vftpvmLoop",
 				"count": "[parameters('numberOfvftpVM')]"
@@ -146,6 +148,13 @@
 				"[resourceId('Microsoft.Compute/availabilitySets', variables('as_vftp'))]",
 				"[concat('Microsoft.Network/networkInterfaces/', variables('vmname'),'nic', copyindex())]"
 			],
+			
+			"plan": {
+			"name": "4-3",
+			"publisher": "bitnami",
+			"product": "nodejs"
+},
+
 			"properties": {
 				"availabilitySet": {
 					"id": "[resourceId('Microsoft.Compute/availabilitySets', variables('as_vftp'))]"
