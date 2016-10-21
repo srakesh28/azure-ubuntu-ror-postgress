@@ -21,7 +21,7 @@
 
 		"numberOfDBVM": {
 			"type": "int",
-			"defaultValue": 1,
+			"defaultValue": 2,
 			"maxValue": 5
 		},
 		"dbVMAdmin": {
@@ -30,8 +30,8 @@
 		"dbsshKeyData": {
 			"type": "string",
 			"metadata": {
-				"description": "SSH rsa public key file as a string.",
-				"defaultValue": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDWOYSdnmPwFj8Fo8P36ENdkOXQ6v+8gMgdEHlfp7tUALkwy/XyhzVxbz+h9hyS29ceA4z0PKqL6adXId83vP72d2kGVhX8cmJNnQAMByvnbL8whSJbbWoVN2KWXhWq6MO1SU/ntDxSUMa0vOAkmrk8kJqvmr34bbE3GpdXylIYIF8i7bDyxLiqmvbFl0alNNm8S7v2EKYx7p4V8gbz6kq9jUrFSU5/o/I8BXreY1zcnS17nmNf4jKBO4jWbnvxFCUbJ4MAErjYjXo8XzWM2UzPWvXJoCBOYMauXX1rlHuhKYLTyT1hWo6KMr18XvpuHcay3gNfeRspfDoee17lX3nT imported-openssh-key"
+				"description": "SSH rsa public key file as a string."
+				
 			}
 		},
 
@@ -68,7 +68,7 @@
 		"ip1": "[concat(variables('subnetFirst3'), '.', add(int(variables('ipValues')[3]), 4))]",
 		"ip2": "[concat(variables('subnetFirst3'), '.', add(int(variables('ipValues')[3]), 5))]",
 		"ip3": "[concat(variables('subnetFirst3'), '.', add(int(variables('ipValues')[3]), 6))]",
-		"fileUris": "https://raw.githubusercontent.com/srakesh28/azure-ubuntu-ror-postgress/master/install_postgresql.sh",
+		"fileUris": "https://raw.githubusercontent.com/srakesh28/azure-ubuntu-ror-postgress/master/install_postgresql-t.sh",
 		"commandToExecute": "sh install_postgresql.sh",
 		"addresses": [
 			"[variables('ip1')]",
@@ -248,7 +248,7 @@
 				"autoUpgradeMinorVersion": true,
 				"settings": {
 					"fileUris": [
-					"https://raw.githubusercontent.com/srakesh28/azure-ubuntu-ror-postgress/master/install_postgresql.sh"
+					"https://raw.githubusercontent.com/srakesh28/azure-ubuntu-ror-postgress/master/install_postgresql-t.sh"
 					],
 					"commandToExecute": "sh install_postgresql.sh"
 					
