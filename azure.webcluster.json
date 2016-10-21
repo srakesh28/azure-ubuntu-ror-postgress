@@ -12,7 +12,7 @@
 		},
 		"vnetname": {
 			"type": "string",
-			"defaultValue": "hmrorvnetdev"
+			"defaultValue": "hmrorvnetqa"
 		},
 		"subnetname": {
 			"type": "string",
