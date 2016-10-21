@@ -34,6 +34,7 @@ Azure CLI : azure group deployment create --template-uri https://raw.githubuserc
 
 
 <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsrakesh28%2Fazure-ubuntu-ror-postgress%2Fmaster%2Fazure.webcluster.json" target="_blank">
+<img src="http://azuredeploy.net/deploybutton.png"/>
 
 Deploy Sidekiq VMs: azure.sidekiqcluster.json - Deploys Sideq servers in DMZ Subnet and runs install_sidekiq.sh on each vm
 
