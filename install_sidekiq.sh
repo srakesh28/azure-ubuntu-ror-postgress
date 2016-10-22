@@ -41,7 +41,9 @@ install_sidekiq_service() {
 	# Install sideq if it is not yet installed
 	if [ $(dpkg-query -W -f='${Status}' sidekiq 2>/dev/null | grep -c "ok installed") -eq 0 ];
 	# Commands to install sidekiq
-	
+	gpg --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3
+	\curl -sSL https://get.rvm.io | bash -s stable --rails
+	rvm install 2.1.5
 	then
 	 
 
