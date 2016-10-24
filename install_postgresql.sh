@@ -7,12 +7,7 @@ then
     echo "You must be root to run this program." >&2
     exit 3
 fi
-# download file to format disk
-wget https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/shared_scripts/ubuntu/vm-disk-utils-0.1.sh
-sudo chmod a+x vm-disk-utils-0.1.sh
 
-#Format the data disk
-bash vm-disk-utils-0.1.sh -s
 
 
 
@@ -34,7 +29,7 @@ echo $SUBNETADDRESS
 	
 # Get SlaveIP 
 export HOSTIP=`hostname -i`
-sip1=`echo $HOSTNAME|awk '{print substr($0,length($0),1)}'`
+sip1=`echo $HOSTIP|awk '{print substr($0,length($0),1)}'`
 sip2=$((sip1 + 1))
 SLAVEIP="$subrange.$sip2"
 echo $SLAVEIP
@@ -56,15 +51,15 @@ fi
 
 # TEMP FIX - Re-evaluate and remove when possible
 # This is an interim fix for hostname resolution in current VM (If it does not exist add it)
-grep -q "$HOSTNAME" /etc/hosts
-if [ $? == 0 ];
-then
-  echo "$HOSTNAME found in /etc/hosts"
-else
-  echo "$HOSTNAME not found in /etc/hosts"
+#grep -q "$HOSTNAME" /etc/hosts
+#if [ $? == 0 ];
+#then
+#  echo "$HOSTNAME found in /etc/hosts"
+#else
+#  echo "$HOSTNAME not found in /etc/hosts"
   # Append it to the hsots file if not there
-  echo "127.0.0.1 $HOSTNAME" >> /etc/hosts
-fi
+#  echo "127.0.0.1 $HOSTNAME" >> /etc/hosts
+#fi
 
 #Loop through options passed
 while getopts :m:s:t:p: optname; do
@@ -114,6 +109,12 @@ install_postgresql_service() {
 }
 
 setup_datadisks() {
+	# download file to format disk
+	wget https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/shared_scripts/ubuntu/vm-disk-utils-0.1.sh
+	sudo chmod a+x vm-disk-utils-0.1.sh
+
+	#Format the data disk
+	bash vm-disk-utils-0.1.sh -s 
 
 	MOUNTPOINT="/datadisks/disk1"
 
@@ -143,8 +144,8 @@ configure_streaming_replication() {
 	then
 		logger "Create user replicator..."
 		echo "CREATE USER replicator WITH REPLICATION PASSWORD '$PGPASSWORD';"
-		# sudo -u postgres psql -c "CREATE USER replicator WITH REPLICATION PASSWORD '$PGPASSWORD';"
-		sudo -u postgres psql -c "CREATE USER replicator REPLICATION LOGIN ENCRYPTED PASSWORD '$PGPASWORD';"
+		sudo -u postgres psql -c "CREATE USER replicator WITH REPLICATION LOGIN ENCRYPTED PASSWORD '$PGPASSWORD';"
+		#sudo -u postgres psql -c "CREATE USER replicator REPLICATION LOGIN ENCRYPTED PASSWORD '$PGPASSWORD';"
 		
 		
 	fi
@@ -154,7 +155,10 @@ configure_streaming_replication() {
 		
 	# Update configuration files
 	cd /etc/postgresql/9.3/main
-
+    if [ "$NODETYPE" == "MASTER" ];
+	
+	then 
+	
 	if grep -Fxq "# install_postgresql.sh" pg_hba.conf
 	then
 		logger "Already in pg_hba.conf"
@@ -195,8 +199,9 @@ configure_streaming_replication() {
 		logger "Updated postgresql.conf"
 		echo "Updated postgresql.conf"
 	fi
-
+   fi
 	# Synchronize the slave
+	
 	if [ "$NODETYPE" == "SLAVE" ];
 	then
 		# Remove all files from the slave data directory
@@ -204,17 +209,58 @@ configure_streaming_replication() {
 		# Stop service
 		service postgresql stop
 		sudo -u postgres rm -rf /var/lib/postgresql/9.3/main
-
+        sudo -u postgres mkdir -p /var/lib/postgresql/9.3/main
+		sudo  chown -R postgres:postgres /var/lib/postgresql/9.3/main
+		sudo  chmod 0700 /var/lib/postgresql/9.3/main
+		
+		# Get IP of Slave Node
+        export SHOSTIP=`hostname -i`
+        # Get MasterIP Assume its always .4
+        # Get Subnet Address and SLAVE IP :
+        export msubip=`hostname -i`
+        export msubrange=`echo $msubip | awk '{print substr($1,1,6)}'`
+        export MADDRESS=$msubrange.4
+        echo $MADDRESS
+		
+		
 		# Make a binary copy of the database cluster files while making sure the system is put in and out of backup mode automatically
 		logger "Make binary copy of the data directory from master"
-		sudo PGPASSWORD=$PGPASSWORD -u postgres pg_basebackup -h $MASTERIP -D /var/lib/postgresql/9.3/main -U replicator -v -P -x
-				 
+		sudo PGPASSWORD=$PGPASSWORD -u postgres pg_basebackup -h $MADDRESS -D /var/lib/postgresql/9.3/main -U replicator -x -P
+		
+		
+    	
+	   # Update configuration files
+	   cd /etc/postgresql/9.3/main
+	   
+	   	if grep -Fxq "# install_postgresql.sh" postgresql.conf
+	then
+		logger "Already in postgresql.conf"
+		echo "Already in postgresql.conf"
+	else
+		# Change configuration including both master and slave configuration settings
+		echo "" >> postgresql.conf
+		echo "# Slave install_postgresql.sh" >> postgresql.conf
+		echo "listen_addresses = '127.0.0.1,$SHOSTIP'" >> postgresql.conf
+		echo "wal_level = hot_standby" >> postgresql.conf
+		echo "max_wal_senders = 3" >> postgresql.conf
+		echo "wal_keep_segments = 8" >> postgresql.conf
+		echo "checkpoint_segments = 8" >> postgresql.conf
+		echo "archive_mode = on" >> postgresql.conf
+		echo "hot_standby = on" >> postgresql.conf
+		echo "" >> postgresql.conf
+		# mkdir -p /var/lib/postgresql/9.3/main/archive/
+		logger "Updated postgresql.conf"
+		echo "Updated postgresql.conf"
+	fi
+	   
+		
 		# Create recovery file
 		logger "Create recovery.conf file"
+		
 		cd /var/lib/postgresql/9.3/main
 		
 		sudo -u postgres echo "standby_mode = 'on'" > recovery.conf
-		sudo -u postgres echo "primary_conninfo = 'host=$MASTERIP port=5432 user=replicator password=$PGPASSWORD'" >> recovery.conf
+		sudo -u postgres echo "primary_conninfo = 'host=$MADDRESS port=5432 user=replicator password=$PGPASSWORD'" >> recovery.conf
 		sudo -u postgres echo "restore_command  = 'cp //var/lib/postgresql/9.3/main/archive/%f %p'" >> recovery.conf
 		sudo -u postgres echo "trigger_file = '/var/lib/postgresql/9.3/main/failover'" >> recovery.conf
 	fi
