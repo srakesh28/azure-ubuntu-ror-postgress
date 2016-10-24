@@ -68,7 +68,7 @@
 		"ip1": "[concat(variables('subnetFirst3'), '.', add(int(variables('ipValues')[3]), 4))]",
 		"ip2": "[concat(variables('subnetFirst3'), '.', add(int(variables('ipValues')[3]), 5))]",
 		"ip3": "[concat(variables('subnetFirst3'), '.', add(int(variables('ipValues')[3]), 6))]",
-		"fileUris": "https://raw.githubusercontent.com/srakesh28/azure-ubuntu-ror-postgress/master/install_postgresql-t.sh",
+		"fileUris": "https://raw.githubusercontent.com/srakesh28/azure-ubuntu-ror-postgress/master/install_postgresql.sh",
 		"commandToExecute": "bash install_postgresql.sh",
 		"addresses": [
 			"[variables('ip1')]",
