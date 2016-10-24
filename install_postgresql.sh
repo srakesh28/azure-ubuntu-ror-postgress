@@ -225,7 +225,7 @@ configure_streaming_replication() {
 		
 		# Make a binary copy of the database cluster files while making sure the system is put in and out of backup mode automatically
 		logger "Make binary copy of the data directory from master"
-		wait 30
+		wait 90
 		sudo PGPASSWORD=$PGPASSWORD -u postgres pg_basebackup -h $MADDRESS -D /var/lib/postgresql/9.3/main -U replicator -x -P
 		
 		
