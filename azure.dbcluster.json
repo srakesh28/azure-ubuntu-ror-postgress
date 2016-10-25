@@ -1,0 +1,398 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"location": {
+			"type": "string",
+			"defaultValue": "westus"
+		},
+		"environmentPostfix": {
+			"type": "string",
+			"defaultValue": "qa"
+		},
+		"vnetname": {
+			"type": "string",
+			"defaultValue": "hmrorvnetqa"
+		},
+		"subnetname": {
+			"type": "string",
+			"defaultValue": "dbsubnet"
+		},
+
+		"numberOfDBVM": {
+			"type": "int",
+			"defaultValue": 1,
+			"maxValue": 5
+		},
+		"dbVMAdmin": {
+			"type": "string"
+		},
+		"dbsshKeyData": {
+			"type": "string",
+			"metadata": {
+				"description": "SSH rsa public key file as a string."
+
+			}
+		},
+
+		"internalDBLBName": {
+			"type": "string",
+			"defaultValue": "hmdbilb01",
+			"metadata": {
+				"description": "Uniquie DNS name for Internal LB Address to connect to DB"
+			}
+
+		},
+
+		"ipaddressrange": {
+			"type": "string",
+			"defaultValue": "11.0.3.0/24"
+		}
+
+
+	},
+	"variables": {
+		"vmApiVersion": "2016-03-30",
+		"networkApiVersion": "2016-03-30",
+		"storageApiVersion": "2015-06-15",
+		"vnetID": "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetname'))]",
+		"dbsubnetRef": "[concat(variables('vnetID'),'/subnets/', parameters('subnetname'))]",
+		"baseIP": "[split(parameters('ipaddressrange'), '/')[0]]",
+		"ipValues": "[split(variables('baseIP'), '.')]",
+		"vnetfirst2": "[concat(variables('ipValues')[0], '.', variables('ipValues')[1], '.')]",
+		"subnetFirst3": "[concat(variables('vnetfirst2'), variables('ipValues')[2])]",
+
+		"ip1": "[concat(variables('subnetFirst3'), '.', add(int(variables('ipValues')[3]), 4))]",
+		"ip2": "[concat(variables('subnetFirst3'), '.', add(int(variables('ipValues')[3]), 5))]",
+		"ip3": "[concat(variables('subnetFirst3'), '.', add(int(variables('ipValues')[3]), 6))]",
+		"fileUris": "https://raw.githubusercontent.com/srakesh28/azure-ubuntu-ror-postgress/master/install_postgresql.sh",
+		"commandToExecute": "bash install_postgresql.sh",
+		"addresses": [
+			"[variables('ip1')]",
+			"[variables('ip2')]",
+			"[variables('ip3')]"
+		],
+
+		"remoteNodeIPArray": ["0.0.0.0", "1.1.1.1", "2.2.2.2"],
+		"alladdresses": "[concat(variables('addresses'), variables('remoteNodeIPArray'))]",
+
+		"storageAccountType": "Premium_LRS",
+		"dbVmSize": "Standard_DS2_V2",
+
+		"as_db": "[concat(variables('dbprefix'), 'as', parameters('environmentPostfix'))]",
+
+		"dbprefix": "db",
+		"vmname": "[concat(variables('dbprefix'), 'vm', parameters('environmentPostfix'))]",
+		"dbStorageAccount": "[concat(substring(uniqueString(resourceGroup().id, variables('vmname')),5), variables('dbprefix'), 'sa')]",
+		"dbdiagnosticsStorageAccount": "[concat(substring(uniqueString(resourceGroup().id, variables('vmname')),5), variables('dbprefix'), 'diagsa')]",
+		"dbsshKeyPath": "[concat('/home/',parameters('dbVMAdmin'),'/.ssh/authorized_keys')]",
+		"lbnicName": "ilbnic1",
+		"loadBalancerName": "[concat(parameters('internalDBLBName'))]",
+		"lbID": "[resourceId('Microsoft.Network/loadBalancers',variables('loadBalancerName'))]",
+		"frontEndIPConfigID": "[concat(variables('loadBalancerName'), '/frontendIPConfigurations/loadBalancerFrontEnd')]",
+
+
+
+		"imageReferences": {
+			"db": {
+				"publisher": "Canonical",
+				"offer": "UbuntuServer",
+				"sku": "14.04.2-LTS",
+				"version": "latest"
+			}
+		}
+	},
+	"resources": [
+
+		{
+			"type": "Microsoft.Storage/storageAccounts",
+			"name": "[concat(variables('dbstorageaccount'), copyIndex())]",
+			"apiVersion": "[variables('storageApiVersion')]",
+			"location": "[parameters('location')]",
+			"tags": {
+				"displayName": "dbstorageaccounts"
+			},
+			"copy": {
+				"name": "dbStorageLoop",
+				"count": "[parameters('numberOfDBVM')]"
+			},
+			"properties": {
+				"accountType": "[variables('storageAccountType')]"
+			}
+		},
+
+		{
+			"type": "Microsoft.Storage/storageAccounts",
+			"name": "[variables('dbdiagnosticsStorageAccount')]",
+			"apiVersion": "[variables('storageApiVersion')]",
+			"location": "[parameters('location')]",
+			"tags": {
+				"displayName": "dbdiagnosticstorage"
+			},
+			"properties": {
+				"accountType": "Standard_LRS"
+			}
+		},
+
+		{
+			"type": "Microsoft.Compute/availabilitySets",
+			"name": "[variables('as_db')]",
+			"apiVersion": "[variables('vmApiVersion')]",
+			"location": "[parameters('location')]",
+			"properties": {
+				"platformUpdateDomainCount": 6,
+				"platformFaultDomainCount": 3
+			},
+			"tags": {
+				"displayName": "availabilityset_db"
+			},
+			"dependsOn": []
+		},
+
+		{
+			"apiVersion": "[variables('vmApiVersion')]",
+			"type": "Microsoft.Compute/virtualMachines",
+			"name": "[concat(variables('vmname'), copyIndex())]",
+			"location": "[parameters('location')]",
+			"copy": {
+				"name": "dbvmLoop",
+				"count": "[parameters('numberOfDBVM')]"
+			},
+			"tags": {
+				"displayName": "dbvms"
+			},
+			"dependsOn": [
+				"dbStorageLoop",
+				"[resourceId('Microsoft.Compute/availabilitySets', variables('as_db'))]",
+				"[concat('Microsoft.Network/networkInterfaces/', variables('vmname'),'nic', copyindex())]"
+			],
+			"properties": {
+				"availabilitySet": {
+					"id": "[resourceId('Microsoft.Compute/availabilitySets', variables('as_db'))]"
+				},
+				"hardwareProfile": {
+					"vmSize": "[variables('dbVmSize')]"
+				},
+				"osProfile": {
+					"computerName": "[concat(variables('vmname'),copyIndex())]",
+					"adminUsername": "[parameters('dbVMAdmin')]",
+					"linuxConfiguration": {
+						"disablePasswordAuthentication": true,
+						"ssh": {
+							"publicKeys": [{
+								"path": "[variables('dbsshKeyPath')]",
+								"keyData": "[parameters('dbsshKeyData')]"
+							}]
+						}
+					}
+
+				},
+				"storageProfile": {
+					"imageReference": "[variables('imagereferences').db]",
+					"osDisk": {
+						"name": "dbosdisk",
+						"vhd": {
+							"uri": "[concat('http://',variables('dbStorageAccount'), copyIndex(),'.blob.core.windows.net/vhds/','dbosdisk', copyIndex(), '.vhd')]"
+						},
+						"caching": "ReadWrite",
+						"createOption": "FromImage"
+					},
+
+					"dataDisks": [{
+							"name": "datadisk1",
+							"diskSizeGB": "128",
+							"lun": 1,
+							"vhd": {
+								"uri": "[concat('http://',variables('dbStorageAccount'), copyIndex(),'.blob.core.windows.net/vhds/',variables('vmname'), copyIndex(), '-datadisk1.vhd')]"
+							},
+							"caching": "None",
+							"createOption": "Empty"
+						},
+
+						{
+							"name": "datadisk2",
+							"diskSizeGB": "128",
+							"lun": 0,
+							"vhd": {
+								"uri": "[concat('http://',variables('dbStorageAccount'), copyIndex(),'.blob.core.windows.net/vhds/',variables('vmname'), copyIndex(), '-datadisk2.vhd')]"
+							},
+							"caching": "None",
+							"createOption": "Empty"
+						}
+
+					]
+
+				},
+
+
+
+				"networkProfile": {
+					"networkInterfaces": [{
+						"id": "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('vmname'),'nic', copyindex()))]"
+					}]
+				}
+			}
+		},
+
+		{
+			"type": "Microsoft.Compute/virtualMachines/extensions",
+			"name": "[concat(variables('vmname'), copyIndex(), '/install_postgresql')]",
+			"apiVersion": "[variables('vmApiVersion')]",
+			"location": "[parameters('location')]",
+			"dependsOn": [
+				"dbvmloop"
+
+			],
+			"copy": {
+				"name": "scriptCopyLoop",
+				"count": "[parameters('numberOfDBVM')]"
+			},
+			"tags": {
+				"displayName": "dbvmscript"
+			},
+			"properties": {
+				"publisher": "Microsoft.Azure.Extensions",
+				"type": "CustomScript",
+				"typeHandlerVersion": "2.0",
+				"autoUpgradeMinorVersion": true,
+				"settings": {
+					"fileUris": [
+						"https://raw.githubusercontent.com/srakesh28/azure-ubuntu-ror-postgress/master/install_postgresql.sh"
+					],
+					"commandToExecute": "bash install_postgresql.sh"
+
+				}
+
+			}
+		},
+
+		{
+			"type": "Microsoft.Compute/virtualMachines/extensions",
+			"name": "[concat(variables('vmname'), copyIndex(), '/diagext')]",
+			"apiVersion": "[variables('vmApiVersion')]",
+			"location": "[parameters('location')]",
+			"dependsOn": [
+				"dbvmloop"
+			],
+			"copy": {
+				"name": "dbvmdiagextensionLoop",
+				"count": "[parameters('numberOfDBVM')]"
+			},
+			"tags": {
+				"displayName": "dbvmsdiagext"
+			},
+			"properties": {
+				"publisher": "Microsoft.OSTCExtensions",
+				"type": "LinuxDiagnostic",
+				"typeHandlerVersion": "2.3",
+				"autoUpgradeMinorVersion": true,
+				"settings": {
+					"perfCfg": [{
+						"query": "SELECT UsedMemory,AvailableMemory FROM SCX_MemoryStatisticalInformation",
+						"table": "Memory"
+					}, {
+						"query": "SELECT PercentProcessorTime FROM SCX_ProcessorStatisticalInformation",
+						"table": "_Total"
+					}]
+				},
+				"protectedSettings": {
+					"storageAccountName": "[variables('dbdiagnosticsStorageAccount')]",
+					"storageAccountKey": "[listkeys(variables('dbdiagnosticsStorageAccount'), variables('storageApiVersion')).key1]",
+					"storageAccountEndPoint": "https://core.windows.net"
+				}
+			}
+		},
+
+
+		{
+			"apiVersion": "[variables('vmApiVersion')]",
+			"type": "Microsoft.Network/networkInterfaces",
+			"name": "[concat(variables('vmname'),'nic', copyindex())]",
+			"location": "[parameters('location')]",
+			"copy": {
+				"name": "dbnicLoop",
+				"count": "[parameters('numberOfDBVM')]"
+			},
+			"dependsOn": [
+				"[concat('Microsoft.Network/loadBalancers/',variables('loadBalancerName'))]"
+
+			],
+			"tags": {
+				"displayName": "DBNICs"
+			},
+			"properties": {
+				"ipConfigurations": [{
+					"name": "ipconfigdb",
+					"properties": {
+						"privateIPAllocationMethod": "Static",
+						"privateIPAddress": "[variables('addresses')[copyIndex()]]",
+						"subnet": {
+							"id": "[variables('dbsubnetRef')]"
+						},
+						"loadBalancerBackendAddressPools": [{
+							"id": "[concat(variables('lbID'), '/backendAddressPools/loadBalancerBackEnd')]"
+						}]
+					}
+				}]
+			}
+		},
+
+		{
+			"apiVersion": "[variables('vmApiVersion')]",
+			"name": "[variables('loadBalancerName')]",
+			"type": "Microsoft.Network/loadBalancers",
+			"location": "[resourceGroup().location]",
+			"properties": {
+				"frontendIPConfigurations": [{
+					"properties": {
+						"subnet": {
+							"id": "[variables('dbsubnetRef')]"
+						},
+						"privateIPAddress": "[concat(variables('subnetFirst3'), '.100')]",
+						"privateIPAllocationMethod": "Static"
+					},
+					"name": "LoadBalancerFrontend"
+				}],
+				"backendAddressPools": [{
+					"name": "loadBalancerBackEnd"
+				}],
+
+				"loadBalancingRules": [{
+					"properties": {
+						"frontendIPConfiguration": {
+							"id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName')), '/frontendIpConfigurations/loadBalancerFrontEnd')]"
+						},
+						"backendAddressPool": {
+							"id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName')), '/backendAddressPools/loadBalancerBackEnd')]"
+						},
+						"probe": {
+							"id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName')), '/probes/ilbdbprobe')]"
+						},
+						"protocol": "Tcp",
+						"frontendPort": 5432,
+						"backendPort": 5432,
+						"idleTimeoutInMinutes": 15
+					},
+					"name": "ilbdbrule"
+				}],
+				"probes": [{
+					"properties": {
+						"protocol": "Tcp",
+						"port": 5432,
+						"intervalInSeconds": 15,
+						"numberOfProbes": 2
+					},
+					"name": "ilbdbprobe"
+				}]
+			}
+		}
+
+
+	],
+	"outputs": {
+		"LBAddress": {
+			"type": "array",
+			"value": "[variables('addresses')]"
+		}
+	}
+}
