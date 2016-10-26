@@ -54,3 +54,5 @@ Azure CLI: azure group deployment create --template-uri https://raw.githubuserco
 <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsrakesh28%2Fazure-ubuntu-ror-postgress%2Fmaster%2Fazure.vsftpcluster.json" target="_blank">
 <img src="http://azuredeploy.net/deploybutton.png"/>
 </a>
+
+![ScreenShot](https://github.com/srakesh28/azure-ubuntu-ror-postgress/blob/master/ROR-PG-IaaS-v1.jpg)
