@@ -1,0 +1,326 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"location": {
+			"type": "string",
+			"defaultValue": "westus"
+		},
+		"environmentPostfix": {
+			"type": "string",
+			"defaultValue": "qa"
+		},
+		"vnetname": {
+			"type": "string",
+			"defaultValue": "hmrorvnetqa"
+		},
+		"subnetname": {
+			"type": "string",
+			"defaultValue": "mgmtsubnet"
+		},
+
+		"numberOfjumpVM": {
+			"type": "int",
+			"defaultValue": 1,
+			"maxValue": 5
+		},
+		"jumpVMAdmin": {
+			"type": "string"
+		},
+		"jumpsshKeyData": {
+			"type": "string",
+			"metadata": {
+				"description": "SSH rsa public key file as a string."
+
+			}
+		},
+
+		"ExternalDnsName": {
+			"type": "string",
+			"defaultValue": "hmrorjump01",
+			"metadata": {
+				"description": "Uniquie DNS name for Jump Server to connect from Web"
+			}
+
+		},
+
+		"ipaddressrange": {
+			"type": "string",
+			"defaultValue": "11.0.1.0/24"
+		}
+
+
+	},
+	"variables": {
+		"vmApiVersion": "2016-03-30",
+		"networkApiVersion": "2016-03-30",
+		"storageApiVersion": "2015-06-15",
+		"vnetID": "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetname'))]",
+		"jumpsubnetRef": "[concat(variables('vnetID'),'/subnets/', parameters('subnetname'))]",
+
+		"baseIP": "[split(parameters('ipaddressrange'), '/')[0]]",
+		"ipValues": "[split(variables('baseIP'), '.')]",
+		"vnetfirst2": "[concat(variables('ipValues')[0], '.', variables('ipValues')[1], '.')]",
+		"subnetFirst3": "[concat(variables('vnetfirst2'), variables('ipValues')[2])]",
+
+		"ip1": "[concat(variables('subnetFirst3'), '.', add(int(variables('ipValues')[3]), 4))]",
+		"ip2": "[concat(variables('subnetFirst3'), '.', add(int(variables('ipValues')[3]), 5))]",
+		"ip3": "[concat(variables('subnetFirst3'), '.', add(int(variables('ipValues')[3]), 6))]",
+		"fileUris": "https://raw.githubusercontent.com/srakesh28/azure-ubuntu-ror-postgress/master/empty_script.sh",
+		"commandToExecute": "sh empty_script.sh",
+		"addresses": [
+			"[variables('ip1')]",
+			"[variables('ip2')]",
+			"[variables('ip3')]"
+		],
+
+		"remoteNodeIPArray": ["0.0.0.0", "1.1.1.1", "2.2.2.2"],
+		"alladdresses": "[concat(variables('addresses'), variables('remoteNodeIPArray'))]",
+
+		"storageAccountType": "Standard_LRS",
+		"jumpVmSize": "Standard_D1_V2",
+
+		"as_jump": "[concat(variables('jumpprefix'), 'as', parameters('environmentPostfix'))]",
+
+		"jumpprefix": "jump",
+		"vmname": "[concat(variables('jumpprefix'), 'vm', parameters('environmentPostfix'))]",
+		"jumpStorageAccount": "[concat(substring(uniqueString(resourceGroup().id, variables('vmname')),5), variables('jumpprefix'), 'sa')]",
+		"jumpdiagnosticsStorageAccount": "[concat(substring(uniqueString(resourceGroup().id, variables('vmname')),5), variables('jumpprefix'), 'diagsa')]",
+		"jumpsshKeyPath": "[concat('/home/',parameters('jumpVMAdmin'),'/.ssh/authorized_keys')]",
+
+		"jumpdnsname": "[concat(parameters('ExternalDnsName'))]",
+
+
+		"imageReferences": {
+			"jump": {
+				"publisher": "Canonical",
+				"offer": "UbuntuServer",
+				"sku": "14.04.2-LTS",
+				"version": "latest"
+			}
+		}
+	},
+	"resources": [{
+			"type": "Microsoft.Storage/storageAccounts",
+			"name": "[concat(variables('jumpstorageaccount'), copyIndex())]",
+			"apiVersion": "[variables('storageApiVersion')]",
+			"location": "[parameters('location')]",
+			"tags": {
+				"displayName": "jumpstorageaccounts"
+			},
+			"copy": {
+				"name": "jumpStorageLoop",
+				"count": "[parameters('numberOfjumpVM')]"
+			},
+			"properties": {
+				"accountType": "[variables('storageAccountType')]"
+			}
+		}, {
+			"type": "Microsoft.Storage/storageAccounts",
+			"name": "[variables('jumpdiagnosticsStorageAccount')]",
+			"apiVersion": "[variables('storageApiVersion')]",
+			"location": "[parameters('location')]",
+			"tags": {
+				"displayName": "jumpdiagnosticstorage"
+			},
+			"properties": {
+				"accountType": "Standard_LRS"
+			}
+		}, {
+			"type": "Microsoft.Compute/availabilitySets",
+			"name": "[variables('as_jump')]",
+			"apiVersion": "[variables('vmApiVersion')]",
+			"location": "[parameters('location')]",
+			"properties": {
+				"platformUpdateDomainCount": 6,
+				"platformFaultDomainCount": 3
+			},
+			"tags": {
+				"displayName": "availabilityset_jump"
+			},
+			"dependsOn": []
+		}, {
+			"apiVersion": "[variables('vmApiVersion')]",
+			"type": "Microsoft.Compute/virtualMachines",
+			"name": "[concat(variables('vmname'), copyIndex())]",
+			"location": "[parameters('location')]",
+			"copy": {
+				"name": "jumpvmLoop",
+				"count": "[parameters('numberOfjumpVM')]"
+			},
+			"tags": {
+				"displayName": "jumpvms"
+			},
+			"dependsOn": [
+				"jumpStorageLoop",
+				"[resourceId('Microsoft.Compute/availabilitySets', variables('as_jump'))]",
+				"[concat('Microsoft.Network/networkInterfaces/', variables('vmname'),'nic', copyindex())]"
+			],
+			"properties": {
+				"availabilitySet": {
+					"id": "[resourceId('Microsoft.Compute/availabilitySets', variables('as_jump'))]"
+				},
+				"hardwareProfile": {
+					"vmSize": "[variables('jumpVmSize')]"
+				},
+				"osProfile": {
+					"computerName": "[concat(variables('vmname'),copyIndex())]",
+					"adminUsername": "[parameters('jumpVMAdmin')]",
+					"linuxConfiguration": {
+						"disablePasswordAuthentication": true,
+						"ssh": {
+							"publicKeys": [{
+								"path": "[variables('jumpsshKeyPath')]",
+								"keyData": "[parameters('jumpsshKeyData')]"
+							}]
+						}
+					}
+
+				},
+				"storageProfile": {
+					"imageReference": "[variables('imagereferences').jump]",
+					"osDisk": {
+						"name": "jumposdisk",
+						"vhd": {
+							"uri": "[concat('http://',variables('jumpStorageAccount'), copyIndex(),'.blob.core.windows.net/vhds/','jumposdisk', copyIndex(), '.vhd')]"
+						},
+						"caching": "ReadWrite",
+						"createOption": "FromImage"
+					}
+
+
+				},
+
+
+
+				"networkProfile": {
+					"networkInterfaces": [{
+						"id": "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('vmname'),'nic', copyindex()))]"
+					}]
+				}
+			}
+		},
+
+		{
+			"type": "Microsoft.Compute/virtualMachines/extensions",
+			"name": "[concat(variables('vmname'), copyIndex(), '/install_jump')]",
+			"apiVersion": "[variables('vmApiVersion')]",
+			"location": "[parameters('location')]",
+			"dependsOn": [
+				"jumpvmLoop"
+
+			],
+			"copy": {
+				"name": "scriptCopyLoop",
+				"count": "[parameters('numberOfjumpVM')]"
+			},
+			"tags": {
+				"displayName": "jumpvmscript"
+			},
+			"properties": {
+				"publisher": "Microsoft.Azure.Extensions",
+				"type": "CustomScript",
+				"typeHandlerVersion": "2.0",
+				"autoUpgradeMinorVersion": true,
+				"settings": {
+					"fileUris": [
+						"https://raw.githubusercontent.com/srakesh28/azure-ubuntu-ror-postgress/master/empty_script.sh"
+					],
+					"commandToExecute": "sh empty_script.sh"
+
+				}
+
+			}
+		},
+
+		{
+			"type": "Microsoft.Compute/virtualMachines/extensions",
+			"name": "[concat(variables('vmname'), copyIndex(), '/diagext')]",
+			"apiVersion": "[variables('vmApiVersion')]",
+			"location": "[parameters('location')]",
+			"dependsOn": [
+				"jumpvmLoop"
+			],
+			"copy": {
+				"name": "jumpvmdiagextensionLoop",
+				"count": "[parameters('numberOfjumpVM')]"
+			},
+			"tags": {
+				"displayName": "jumpvmsdiagext"
+			},
+			"properties": {
+				"publisher": "Microsoft.OSTCExtensions",
+				"type": "LinuxDiagnostic",
+				"typeHandlerVersion": "2.3",
+				"autoUpgradeMinorVersion": true,
+				"settings": {
+					"perfCfg": [{
+						"query": "SELECT UsedMemory,AvailableMemory FROM SCX_MemoryStatisticalInformation",
+						"table": "Memory"
+					}, {
+						"query": "SELECT PercentProcessorTime FROM SCX_ProcessorStatisticalInformation",
+						"table": "_Total"
+					}]
+				},
+				"protectedSettings": {
+					"storageAccountName": "[variables('jumpdiagnosticsStorageAccount')]",
+					"storageAccountKey": "[listkeys(variables('jumpdiagnosticsStorageAccount'), variables('storageApiVersion')).key1]",
+					"storageAccountEndPoint": "https://core.windows.net"
+				}
+			}
+		},
+
+
+		{
+			"apiVersion": "[variables('vmApiVersion')]",
+			"type": "Microsoft.Network/networkInterfaces",
+			"name": "[concat(variables('vmname'),'nic', copyindex())]",
+			"location": "[parameters('location')]",
+			"copy": {
+				"name": "jumpnicLoop",
+				"count": "[parameters('numberOfjumpVM')]"
+			},
+			"dependsOn": [
+				"[concat('Microsoft.Network/publicIPAddresses/', variables('jumpdnsname'))]"
+			],
+			"tags": {
+				"displayName": "jumpNICs"
+			},
+			"properties": {
+				"ipConfigurations": [{
+					"name": "ipconfigjump",
+					"properties": {
+						"privateIPAllocationMethod": "Static",
+						"privateIPAddress": "[variables('addresses')[copyIndex()]]",
+						"publicIPAddress": {
+							"id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('jumpdnsname'))]"
+						},
+						"subnet": {
+							"id": "[variables('jumpsubnetRef')]"
+						}
+					}
+				}]
+			}
+		},
+
+		{
+			"apiVersion": "[variables('vmapiVersion')]",
+			"type": "Microsoft.Network/publicIPAddresses",
+			"name": "[variables('jumpdnsname')]",
+			"location": "[resourceGroup().location]",
+			"properties": {
+				"publicIPAllocationMethod": "Dynamic",
+				"dnsSettings": {
+					"domainNameLabel": "[variables('jumpdnsname')]"
+				}
+			}
+		}
+
+	],
+	"outputs": {
+		"LBAddress": {
+			"type": "array",
+			"value": "[variables('addresses')]"
+		}
+	}
+}
