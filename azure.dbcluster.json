@@ -21,7 +21,7 @@
 
 		"numberOfDBVM": {
 			"type": "int",
-			"defaultValue": 1,
+			"defaultValue": 2,
 			"maxValue": 5
 		},
 		"dbVMAdmin": {
