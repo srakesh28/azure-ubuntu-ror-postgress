@@ -1,7 +1,8 @@
 
 Create Resource Group
 
-azure group create demo1 westus
+Azure CLI 1.x : azure group create demo1 westus
+Azure CLI 2.x : az group create -n demo1 -l westus
 
 Deploy Network Subnets : azure.network.json – sets up the network and NSGs between the subnets.
 
